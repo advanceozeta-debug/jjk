@@ -307,6 +307,7 @@ function makeMuha(){const [g,b,add]=grp();
   add(new THREE.CylinderGeometry(.2,.26,.22,12),lam(0x9aa3b5),0,1.36,0);add(new THREE.SphereGeometry(.27,14,10),lam(0xe9d6c0),0,1.62,0);
   add(new THREE.SphereGeometry(.285,14,10,0,PI*2,0,PI*.5),lam(0x1a1820),0,1.66,-.02).rotation.x=-.2;add(new THREE.SphereGeometry(.12,8,6),lam(0x1a1820),0,1.92,-.06);
   for(const s of[-1,1])add(new THREE.BoxGeometry(.08,.02,.02),basic(0x7fe0ff),s*.1,1.64,.25);
+  g.userData.six=[-1,1].map(s=>{const e=glow(0x7fe0ff,.28);e.position.set(s*.1,1.64,.27);b.add(e);return e});
   const piv=new THREE.Group();piv.position.set(.32,1.0,.1);const hand=glow(0x7fb8ff,.7);hand.position.z=.45;piv.add(hand);b.add(piv);g.userData.piv=piv;
   const halo=new THREE.Mesh(new THREE.TorusGeometry(.78,.018,6,48),basic(0x9fd0ff,{transparent:true,opacity:.7}));halo.rotation.x=PI/2;halo.position.y=1;g.add(halo);g.userData.halo=halo;
   const field=new THREE.Mesh(new THREE.SphereGeometry(1.15,24,16),basic(0x7fb8ff,{transparent:true,opacity:.08,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));field.position.y=1;g.add(field);g.userData.field=field;
@@ -344,7 +345,7 @@ const CH={
   s2:{name:'박치기',desc:'몸통으로 들이받기',cost:20,cd:4,windup:.4,active:.8,recover:.6,range:[5,14],start:F=>lunge(F,12),contact:15},
   s3:{name:'뿌리 솟기',desc:'상대 쪽으로 뿌리가 줄지어 솟음',cost:25,cd:5,windup:.45,active:.1,recover:.5,red:true,range:[0,12],ev:[[0,F=>{const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0),l=d.length();d.normalize();for(let i=1;i<=5;i++){const c=F.pos.clone().addScaledVector(d,1.5+i/5*(l+.5));clampV(c,A);tele(F,c,1.3,.4+i*.12,10,0xb07040,.8)}}]]},
   dom:{name:'서낭당',han:'城隍堂',sky:['#0c0604','#2e140c','#5a2a18'],acc:0xff7a3a,every:1.5,tick:F=>{wave(F,9,12,9);F.hp=Math.min(F.def.hp,F.hp+3)},desc:'충격파가 거듭 퍼지고 체력이 회복됨'}},
- muha:{name:'무하',title:'무하한을 두른 술사',hp:95,spd:6.4,r:.5,build:makeMuha,keep:5,inf:true,
+ muha:{name:'무하',title:'무하한을 두른 술사',hp:95,spd:6.4,r:.5,build:makeMuha,keep:5,inf:true,six:true,
   atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0x9fd0ff},
   tal:{name:'청탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0x3d7bff})},
   s1:{name:'창',desc:'끌어당기는 점을 만들어 상대와 투사체를 빨아들임',cost:25,cd:4,windup:.2,active:.1,recover:.3,range:[2,9],ev:[[0,F=>blueOrb(F)]]},
@@ -442,7 +443,7 @@ function setupFighters(){
   const tags=S.mode==='net'?(S.me?['상대','나']:['나','상대']):S.mode==='2p'?['1P','2P']:['1P','CPU'];$('tag0').textContent=tags[0];$('tag1').textContent=tags[1];
   const d=S.f[S.me].def;
   {const keys=S.mode==='2p'?{s1:'T',s2:'Y',s3:'Q',ult:'E'}:{s1:'Z',s2:'X',s3:'V',ult:'F'};
-   $('skbar').innerHTML=['s1','s2','s3','ult'].map(k=>{const mv=k==='ult'?ULT:d[k];return `<div class="skc${k==='ult'?' u':''}" id="sk-${k}"><kbd>${keys[k]}</kbd><b>${k==='ult'?d.dom.name:mv.name}</b><span>영력 ${mv.cost} · ${mv.cd}초</span></div>`}).join('')}$('bS1').textContent=d.s1.name;$('bS2').textContent=d.s2.name;$('bS3').textContent=d.s3.name;
+   $('skbar').innerHTML=['s1','s2','s3','ult'].map(k=>{const mv0=k==='ult'?ULT:d[k],mv=d.six?Object.assign({},mv0,{cost:Math.ceil(mv0.cost*.75)}):mv0;return `<div class="skc${k==='ult'?' u':''}" id="sk-${k}"><kbd>${keys[k]}</kbd><b>${k==='ult'?d.dom.name:mv.name}</b><span>영력 ${mv.cost} · ${mv.cd}초</span></div>`}).join('')}$('bS1').textContent=d.s1.name;$('bS2').textContent=d.s2.name;$('bS3').textContent=d.s3.name;
 }
 function resetRound(){
   clearAll();
@@ -459,7 +460,7 @@ function startMatch(){
 function intro(){S.state='intro';S.intro=1.8;S.slow=0;banner(`${S.round}라운드`,`${S.f[0].def.name} 對 ${S.f[1].def.name}`);snd(220,.4,'triangle',.05,110)}
 
 // ================= combat core =================
-function spend(F,n){if(F.mp>=n){F.mp-=n;return true}if(F.human)pop(F,'영력 부족','var(--dim)');return false}
+function spend(F,n){if(F.def.six)n=Math.ceil(n*.75);if(F.mp>=n){F.mp-=n;return true}if(F.human)pop(F,'영력 부족','var(--dim)');return false}
 function setFlash(F,on){for(const m of F.m.userData.mats)m.emissive.setHex(on?0xffffff:m.userData.base)}
 function infOn(T){return !!T.def.inf&&T.mp>=8&&T.state!=='stun'&&T.state!=='ko'&&!(S.dom&&S.dom.owner!==T)}
 function stun(F,t){F.state='stun';F.t=t;F.act=null;F.lv=null;F.tg.visible=false;F.guard=false;F.queued=false}
@@ -471,7 +472,7 @@ function hit(Aa,T,dmg,o={}){
   return applyHit(Aa,T,dmg,o)}
 function applyHit(Aa,T,dmg,o={}){
   if(S.state!=='fight'||T.state==='ko'||T.inv>0)return false;
-  if(!o.unb&&infOn(T)){T.mp=Math.max(0,T.mp-(4+dmg*1.2));pop(T,'무하한','#9fd0ff');snd(1600,.1,'sine',.03,-900);
+  if(!o.unb&&infOn(T)){T.mp=Math.max(0,T.mp-(4+dmg*1.2)*(T.def.six?.6:1));pop(T,'무하한','#9fd0ff');snd(1600,.1,'sine',.03,-900);
     burst(T.pos.clone().setY(1.1).addScaledVector(Aa?Aa.pos.clone().sub(T.pos).setY(0).normalize():fwd(T.face),1.1),0x9fd0ff,8,3);return 'block'}
   if(T.counterT>0&&!o.unb&&!o.proj&&Aa&&Aa.state!=='ko'){T.counterT=0;T.tg.visible=false;const d=T.pos.clone().sub(Aa.pos).setY(0).normalize();burst(T.pos.clone().setY(1),0x6fb4ff,16,6);
     T.pos.copy(Aa.pos).addScaledVector(d,-(Aa.def.r+T.def.r+.6));clampV(T.pos,A);T.face=Math.atan2(Aa.pos.x-T.pos.x,Aa.pos.z-T.pos.z);if(T.state==='act'){T.act=null;T.state='free'}
@@ -667,7 +668,7 @@ function aiInput(F,dt){
 function updateFighter(F,I,dt){
   if(F.state==='ko'){F.koT+=dt;return}
   if(S.dom&&S.dom.owner!==F)dt*=.55;
-  F.mp=Math.min(100,F.mp+(S.dom?0:8)*dt);
+  F.mp=Math.min(100,F.mp+(S.dom?0:8*(F.def.six?1.25:1))*dt);
   F.inv=Math.max(0,F.inv-dt);F.stag=Math.max(0,F.stag-dt);F.dashCd-=dt;for(const k in F.cd)F.cd[k]-=dt;if(F.counterT>0){F.counterT-=dt;if(F.counterT<=0)F.tg.visible=false}F.emp=Math.max(0,F.emp-dt);
   if(F.flash>0){F.flash-=dt;if(F.flash<=0)setFlash(F,false)}
   if(F.pull){F.pos.lerp(F.pull.to,Math.min(1,dt*14));F.pull.t-=dt;if(F.pull.t<=0)F.pull=null}
@@ -699,7 +700,7 @@ function updateWorld(dt){
   for(const b of S.proj){if(b.l<=0)continue;const T=opp(b.own);
     if(b.homing){const want=T.pos.clone().setY(1.1).sub(b.m.position).setY(0).normalize().multiplyScalar(b.v.length());b.v.lerp(want,Math.min(1,b.homing*dt));b.homing=Math.max(0,b.homing-dt*.6)}
     let sp=1;if(!b.pierce&&infOn(T)){const dx=b.m.position.x-T.pos.x,dz=b.m.position.z-T.pos.z,d=Math.hypot(dx,dz);
-      if(d<2.8&&dx*b.v.x+dz*b.v.z<0){const k=Math.max(0,(d-1.15)/1.65);sp=k*k;T.mp=Math.max(0,T.mp-dt*3)}}
+      if(d<2.8&&dx*b.v.x+dz*b.v.z<0){const k=Math.max(0,(d-1.15)/1.65);sp=k*k;T.mp=Math.max(0,T.mp-dt*(T.def.six?1.8:3))}}
     b.m.position.addScaledVector(b.v,dt*sp);b.l-=dt;
     if(b.pierce){b.m.rotation.y+=dt*6;if(Math.random()<.6)burst(b.m.position,0xaa5aff,1,2);
       for(const e of S.proj)if(e!==b&&e.l>0&&e.own!==b.own&&Math.hypot(e.m.position.x-b.m.position.x,e.m.position.z-b.m.position.z)<1.2){e.l=0;burst(e.m.position,0xaa5aff,6,5)}}if(b.kind==='tal'||b.kind==='rock')b.m.rotation.y+=dt*14;
@@ -746,7 +747,7 @@ function syncF(F,dt){
   b.rotation.x+=(lean-b.rotation.x)*Math.min(1,dt*(F.state==='ko'?20:14));
   if(pv){const t=Math.min(1,dt*18);pv.rotation.x+=(ax-pv.rotation.x)*t;pv.rotation.y+=(ay-pv.rotation.y)*t;pv.rotation.z+=(az-pv.rotation.z)*t}
   if(m.userData.eyes)m.userData.eyes.forEach(e=>e.visible=F.state==='act');
-  if(m.userData.field){const on=infOn(F),U=m.userData;U.field.visible=on;U.field.material.opacity=.06+.03*Math.sin(S.t*3);U.halo.rotation.z+=dt*(on?2:.4);U.halo.material.opacity=on?.75:.2;
+  if(m.userData.field){const on=infOn(F),U=m.userData;U.field.visible=on;U.field.material.opacity=.06+.03*Math.sin(S.t*3);U.halo.rotation.z+=dt*(on?2:.4);U.six.forEach(e=>e.scale.setScalar(.24+.08*Math.sin(S.t*5)+(F.state==='act'?.18:0)));U.halo.material.opacity=on?.75:.2;
     const a=F.act,ch=F.state==='act'&&a&&a.mv.key==='s3'&&a.phase==='windup';U.ch.forEach((o,i)=>{o.visible=ch;if(ch){const k=Math.max(0,a.t/a.mv.windup);o.position.set((i?-1:1)*(.2+1.1*k),1.1,.7)}})}
   if(F.id==='mung'&&F.state!=='ko')m.position.y=.12+Math.sin(S.t*2+F.side)*.07;
 }
@@ -806,7 +807,7 @@ function keysText(){
   return '<b>1P</b> <kbd>WASD</kbd> 이동 (두 번 톡 · 대시) · <kbd>F</kbd> 베기 · <kbd>T</kbd> <kbd>Y</kbd> <kbd>Q</kbd> 비술 · <kbd>E</kbd> 결계<br>'+
     '<b>2P</b> <kbd>방향키</kbd> 이동 (두 번 톡 · 대시) · <kbd>.</kbd> 베기 · <kbd>;</kbd> <kbd>\'</kbd> <kbd>[</kbd> 비술 · <kbd>]</kbd> 결계 (숫자패드 1·4·5·7·6도 가능)<br>둘이서 대전은 키보드 하나를 함께 씁니다.';
 }
-const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (영력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (영력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (영력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (영력 50·20초)`;
+const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 영력이 남아 있으면 일반 공격과 투사체가 닿지 않음':''}${c.six?' · <b>육안</b> 영력 소모 25% 감소, 회복 25% 증가':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (영력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (영력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (영력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (영력 50·20초)`;
 function remoteCh(){const o=NET.remote;return o&&CH[o.presence.ch]?o.presence.ch:null}
 function renderSelect(){
   seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});
