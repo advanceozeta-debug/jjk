@@ -233,12 +233,12 @@ body.touch .tc{display:block}
 (()=>{
 const $=id=>document.getElementById(id);
 const stage=$('stage'),cv=$('cv');
-const V3=THREE.Vector3,PI=Math.PI,A=24.3,EDGE=27;
+const V3=THREE.Vector3,PI=Math.PI,A=37.3,EDGE=40;
 
 // ================= renderer & world =================
 const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
 renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x0d0f1c);scene.fog=new THREE.Fog(0x0d0f1c,45,130);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x0d0f1c);scene.fog=new THREE.Fog(0x0d0f1c,65,190);
 const cam=new THREE.PerspectiveCamera(55,1,.1,300);let camK=1;
 function resize(){const r=stage.getBoundingClientRect();if(!r.width)return;renderer.setSize(r.width,r.height,false);cam.aspect=r.width/r.height;cam.updateProjectionMatrix();camK=r.width<r.height?1.3:1}
 new ResizeObserver(resize).observe(stage);
@@ -251,7 +251,7 @@ const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=64;co
   g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c)})();
 const glow=(c,s)=>{const m=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:c,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));m.scale.setScalar(s);return m};
 (function world(){
-  const ar=new THREE.Group();ar.scale.set(2,1,2);scene.add(ar); // 경기장 2배
+  const ar=new THREE.Group();ar.scale.set(3,1,3);scene.add(ar); // 경기장 3배 (78×78)
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(26,26),lam(0x2a2e42));floor.rotation.x=-PI/2;ar.add(floor);
   const lineM=basic(0x343a56);
   for(let i=-12;i<=12;i+=3){const a=new THREE.Mesh(new THREE.PlaneGeometry(.05,26),lineM);a.rotation.x=-PI/2;a.position.set(i,.01,0);ar.add(a);
@@ -270,7 +270,7 @@ const glow=(c,s)=>{const m=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,c
   const wc=document.createElement('canvas');wc.width=64;wc.height=128;const g=wc.getContext('2d');g.fillStyle='#151829';g.fillRect(0,0,64,128);
   for(let y=4;y<128;y+=10)for(let x=4;x<64;x+=10){g.fillStyle=Math.random()<.18?'#c9b56a':Math.random()<.1?'#4f7f8f':'#1e2236';g.fillRect(x,y,6,6)}
   const wt=new THREE.CanvasTexture(wc);wt.wrapS=wt.wrapT=THREE.RepeatWrapping;
-  for(let i=0;i<40;i++){const a=i/40*PI*2+Math.random()*.1,d=48+Math.random()*34,h=8+Math.random()*26,w=5+Math.random()*7;
+  for(let i=0;i<40;i++){const a=i/40*PI*2+Math.random()*.1,d=68+Math.random()*44,h=8+Math.random()*26,w=5+Math.random()*7;
     const t=wt.clone();t.needsUpdate=true;t.repeat.set(w/6,h/12);
     const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),basic(0xffffff,{map:t}));b.position.set(Math.cos(a)*d,h/2-10,Math.sin(a)*d);b.rotation.y=Math.random();scene.add(b)}
   const moon=new THREE.Mesh(new THREE.SphereGeometry(5,16,12),basic(0xe7e4da,{fog:false}));moon.position.set(-50,40,-110);scene.add(moon);
@@ -383,6 +383,8 @@ function regMats(g){const mats=[];g.traverse(o=>{if(o.isMesh&&o.material.emissiv
 // 공통 술식: 모든 캐릭터가 사용
 const RCT={kind:'rct',name:'반전술식',cost:30,cd:0,rate:.16}; // 누르는 동안 초당 주력 30 → 초당 최대 체력 16% 회복
 const SD={kind:'sd',name:'간이 영역',cost:20,cd:0,windup:.12,active:.05,recover:.1,dur:4,hp:25,start:F=>openSD(F)};
+// 결계를 펼칠 수 있는지: 결계가 없을 때, 또는 결계 없는 영역(복마어주자)으로 상대 결계를 깰 때
+const canDom=F=>!S.dom||(!!F.def.dom.noBarrier&&S.dom.owner!==F);
 const ULT={kind:'ult',name:'영역 전개',cost:50,cd:20,windup:.45,active:.1,recover:.3,red:true,ev:[[0,F=>openDomain(F)]]};
 const CH={
  yuji:{name:'이타도리 유지',title:'맨손으로 싸우는 그릇',hp:115,spd:7,r:.5,build:makeYuji,keep:2.4,bf:.06,
@@ -421,7 +423,7 @@ const CH={
   s1:{name:'해',desc:'보이지 않을 만큼 빠른 참격을 날림',cost:20,cd:2.5,windup:.12,active:.1,recover:.2,range:[2,13],ev:[[0,F=>shoot(F,{kind:'wave',spd:28,dmg:9,col:0xff3a4a,l:.7})]]},
   s2:{name:'팔',desc:'가까운 상대를 난도질, 상대 체력이 클수록 더 아픔',cost:30,cd:5,windup:.3,active:.25,recover:.35,red:true,range:[0,3.6],ev:[[0,F=>cleave(F)],[.12,F=>slashFx(F,2)]]},
   s3:{name:'개 · 푸가',desc:'불화살을 쏘고 맞은 자리에서 폭발, 자신의 영역 안에서 쓰면 위력 120%',cost:45,cd:10,windup:.8,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>fuga(F)]]},
-  dom:{name:'복마어주자',han:'伏魔御廚子',sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 펼쳐져 안에 있는 상대를 쉬지 않고 벰'}},
+  dom:{name:'복마어주자',han:'伏魔御廚子',noBarrier:true,sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 펼쳐져 상대를 쉬지 않고 벰, 상대 결계가 펼쳐져 있어도 바깥에서 깨고 펼칠 수 있음'}},
 };
 const IDS=Object.keys(CH);
 for(const id of IDS){CH[id].s1.key='s1';CH[id].s2.key='s2';CH[id].s3.key='s3'}ULT.key='ult';RCT.key='rct';SD.key='sd';
@@ -656,7 +658,7 @@ function tryAct(F,k){
   if(F.state!=='free')return;
   if(k==='tal'){const t=F.def.tal;if(F.cd.tal>0||!spend(F,t.cost))return;F.cd.tal=t.cd;t.fire(F);return}
   if(k==='s1'||k==='s2'||k==='s3'){const mv=F.def[k];if(F.cd[k]>0||!spend(F,mv.cost))return;F.cd[k]=mv.cd;startAct(F,mv);return}
-  if(k==='ult'){if(S.dom||F.cd.ult>0||!spend(F,ULT.cost))return;F.cd.ult=ULT.cd;startAct(F,ULT)}
+  if(k==='ult'){if(!canDom(F)||F.cd.ult>0||!spend(F,ULT.cost))return;F.cd.ult=ULT.cd;startAct(F,ULT)}
 }
 function endAct(F){const mv=F.act.mv;F.state='free';F.act=null;if(mv.kind==='atk'){F.lastEnd=S.t;if(F.queued){F.queued=false;doAtk(F)}}}
 function runEv(F){const a=F.act,ev=a.mv.ev;if(!ev)return;while(F.act===a&&a.ev<ev.length&&a.el>=ev[a.ev][0]){const fn=ev[a.ev][1];a.ev++;fn(F)}}
@@ -840,15 +842,17 @@ function domTex(id){if(DOMTEX[id])return DOMTEX[id];const sky=CH[id].dom.sky,c=d
     for(let x=0;x<=512;x+=8)g.lineTo(x,base-Math.abs(Math.sin(x*.018+base))*amp-Math.random()*6);g.lineTo(512,256);g.fill()}
   return DOMTEX[id]=new THREE.CanvasTexture(c)}
 function openDomain(F){
-  if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'dom',a:{}});closeDomain();const D=F.def.dom,O=opp(F),g=new THREE.Group();
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(38,32,16),new THREE.MeshBasicMaterial({map:domTex(F.id),side:THREE.BackSide,transparent:true,opacity:0,fog:false,depthWrite:false}));
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(27,64),basic(0x0e0b16,{transparent:true,opacity:0,depthWrite:false}));floor.rotation.x=-PI/2;floor.position.y=.02;
-  const rings=[];for(const r of[8,16,24]){const m=new THREE.Mesh(new THREE.RingGeometry(r-.06,r,72),basic(D.acc,{transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-PI/2;m.position.y=.03;g.add(m);rings.push(m)}
-  const moon=glow(F.id==='jang'?0xff9a5a:0xfff4d0,10);moon.material.fog=false;moon.material.opacity=0;moon.position.set(0,20,-32);moon.scale.setScalar(18);
+  if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'dom',a:{}});
+  const broke=S.dom&&S.dom.owner!==F&&F.def.dom.noBarrier?S.dom.owner:null;closeDomain();const D=F.def.dom,O=opp(F),g=new THREE.Group();
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(56,32,16),new THREE.MeshBasicMaterial({map:domTex(F.id),side:THREE.BackSide,transparent:true,opacity:0,fog:false,depthWrite:false}));
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(40,72),basic(0x0e0b16,{transparent:true,opacity:0,depthWrite:false}));floor.rotation.x=-PI/2;floor.position.y=.02;
+  const rings=[];for(const r of[12,24,36]){const m=new THREE.Mesh(new THREE.RingGeometry(r-.06,r,72),basic(D.acc,{transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-PI/2;m.position.y=.03;g.add(m);rings.push(m)}
+  const moon=glow(F.id==='jang'?0xff9a5a:0xfff4d0,10);moon.material.fog=false;moon.material.opacity=0;moon.position.set(0,28,-48);moon.scale.setScalar(26);
   const orbs=[];for(let i=0;i<12;i++){const m=F.id==='haram'?new THREE.Mesh(TAL_GEO,TAL_MAT):glow(D.acc,1.4);if(F.id==='haram')m.scale.setScalar(1.6);g.add(m);orbs.push(m)}
+  if(D.noBarrier){dome.visible=false;moon.visible=false} // 결계 없이 펼쳐지는 영역: 돔이 없음
   g.add(dome,floor,moon);scene.add(g);
   S.dom={owner:F,g,dome,floor,rings,moon,orbs,t:0,dur:7,fire:.6,idx:0};
-  scene.fog.color.setHex(0x0a0814);banner('결계 현현',`${F.def.name} · ${D.name}(${D.han})`);snd(110,1.6,'sine',.07,-50);snd(330,1.2,'triangle',.04,110);flash(.5);S.shake=.4;
+  scene.fog.color.setHex(D.noBarrier?0x1a0606:0x0a0814);if(broke){banner('결계 파괴',`${F.def.name} · ${D.name}(${D.han}) · ${broke.def.name}의 ${broke.def.dom.name} 붕괴`,2);burst(new V3(0,6,0),D.acc,60,16);S.shake=.7}else banner('결계 현현',`${F.def.name} · ${D.name}(${D.han})`);snd(110,1.6,'sine',.07,-50);snd(330,1.2,'triangle',.04,110);flash(.5);S.shake=.4;
   if(Math.hypot(O.pos.x-F.pos.x,O.pos.z-F.pos.z)<8+O.def.r)hit(F,O,15,{unb:true,big:true,stun:1.0,domFx:true})
 }
 function domTal(F){const d=S.dom,O=opp(F),p=d.orbs[d.idx++%12].position,dist=Math.max(1,Math.hypot(O.pos.x-p.x,O.pos.z-p.z));
@@ -884,7 +888,7 @@ function aiInput(F,dt){
   ai.next-=dt;
   if(ai.next<=0&&!I.guard&&F.state==='free'){ai.next=D.think*(.6+Math.random()*.8);
     const c=[];if(l<F.def.atk.range+O.def.r+.2)c.push(['atk',3]);
-    if(F.cd.ult<=0&&F.mp>=ULT.cost&&!S.dom&&l<5.5)c.push(['ult',5]);
+    if(F.cd.ult<=0&&F.mp>=ULT.cost&&canDom(F)&&(l<5.5||S.dom))c.push(['ult',S.dom?14:5]);
     if(F.mp>=SD.cost&&S.dom&&S.dom.owner!==F&&!(F.sdT>0))c.push(['sd',9]);
     if(!F.ampOn&&F.mp>35&&infOn(O)&&l<4.5)c.push(['amp',6]);if(F.ampOn&&(l>7||!infOn(O)||F.mp<12))c.push(['amp',20]);
 
@@ -1020,10 +1024,10 @@ function hud(){
   for(const F of S.f){const i=F.side;$('hp'+i).style.width=Math.max(0,F.hp/F.def.hp*100)+'%';$('mp'+i).style.width=F.mp+'%';$('gb'+i).classList.toggle('full',F.mp>=100);
     $('t'+i).textContent='주력 '+(F.mp|0)+(F.zoneT>0?' · 존'+(F.zone>1?' ×'+F.zone:''):'');[...$('rd'+i).children].forEach((d,j)=>d.classList.toggle('on',S.wins[i]>j))}
   $('rlab').textContent=S.round+'라운드';
-  $('bUlt').classList.toggle('ready',a.cd.ult<=0&&a.mp>=ULT.cost&&!S.dom);$('bUlt').classList.toggle('low',a.cd.ult>0||a.mp<ULT.cost||!!S.dom);
+  $('bUlt').classList.toggle('ready',a.cd.ult<=0&&a.mp>=ULT.cost&&canDom(a));$('bUlt').classList.toggle('low',a.cd.ult>0||a.mp<ULT.cost||!canDom(a));
   for(const F of S.f){const i=F.side;$('ib'+i).hidden=!F.def.inf;if(F.def.inf){$('ig'+i).style.width=F.infG+'%';$('ib'+i).classList.toggle('brk',F.infBrk>0)}}
   $('bAmp').classList.toggle('on',!!a.ampOn);{const c=$('sk-amp');if(c)c.style.boxShadow=a.ampOn?'0 0 10px rgba(232,244,255,.7)':''}
-  for(const k of['s1','s2','s3','ult','rct','sd']){const cd=Math.max(0,a.cd[k]),t=cd>0?(cd>=10?Math.ceil(cd):cd.toFixed(1)):'',mv=MV(a,k),low=cd>0||a.mp<cost(a,mv)||(k==='ult'&&!!S.dom);const b=$({s1:'bS1',s2:'bS2',s3:'bS3',ult:'bUlt',rct:'bRct',sd:'bSd'}[k]);b.dataset.cd=t;if(k==='rct'||k==='sd')b.classList.toggle('low',low);
+  for(const k of['s1','s2','s3','ult','rct','sd']){const cd=Math.max(0,a.cd[k]),t=cd>0?(cd>=10?Math.ceil(cd):cd.toFixed(1)):'',mv=MV(a,k),low=cd>0||a.mp<cost(a,mv)||(k==='ult'&&!canDom(a));const b=$({s1:'bS1',s2:'bS2',s3:'bS3',ult:'bUlt',rct:'bRct',sd:'bSd'}[k]);b.dataset.cd=t;if(k==='rct'||k==='sd')b.classList.toggle('low',low);
     const c=$('sk-'+k);if(c){c.dataset.cd=t;c.classList.toggle('low',low)}}
   $('bS1').classList.toggle('low',a.cd.s1>0||a.mp<a.def.s1.cost);$('bS2').classList.toggle('low',a.cd.s2>0||a.mp<a.def.s2.cost);$('bS3').classList.toggle('low',a.cd.s3>0||a.mp<a.def.s3.cost);
 }
@@ -1154,7 +1158,7 @@ function handleEvt(R,e){const L=S.f[S.me];
 function netFx(R,n,a){if(!a||typeof a!=='object')return;
   if(n==='shoot'){if(!['tal','orb','wave','chain','rock','purple'].includes(a.kind))return;
     const o={kind:a.kind,n:num(a.n,1,5,1)|0,spread:num(a.spread,0,1),spd:num(a.spd,1,40,12),dmg:0,col:num(a.col,0,0xffffff,0x9fe6d6)|0,l:num(a.l,.1,4,2.5),homing:num(a.homing,0,4),base:num(a.base,-10,10),big:a.big?1:0,pierce:a.pierce?1:0};
-    if(Array.isArray(a.sp))o.sp=[num(a.sp[0],-40,40),num(a.sp[1],0,10,1),num(a.sp[2],-40,40)];if(a.vy!=null)o.vy=num(a.vy,-20,20);shoot(R,o)}
+    if(Array.isArray(a.sp))o.sp=[num(a.sp[0],-60,60),num(a.sp[1],0,10,1),num(a.sp[2],-60,60)];if(a.vy!=null)o.vy=num(a.vy,-20,20);shoot(R,o)}
   else if(n==='strike')strike(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.r,.5,4,1.8),0);
   else if(n==='tele')tele(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.r,.5,4,2),num(a.dur,.2,3,1),0,num(a.col,0,0xffffff,0x8a4dff)|0);
   else if(n==='wave')wave(R,num(a.spd,1,20,8),num(a.max,1,20,12),0,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)));
