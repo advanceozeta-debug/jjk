@@ -152,8 +152,8 @@ body.touch .tc{display:block}
 .tc .btn.cm.sd{left:calc(108px + env(safe-area-inset-left,0px));color:#e7e4da;border-color:#8a8676;background:rgba(40,38,30,.62)}
 .tc .btn.cm.amp{bottom:calc(388px + env(safe-area-inset-bottom,0px));color:#e8f4ff;border-color:#7a8aa8;background:rgba(30,36,52,.62)}
 .tc .btn.cm.amp.on{background:rgba(232,244,255,.35);box-shadow:0 0 12px rgba(232,244,255,.6)}
-.editing .tc{display:block}.editing .lpad{pointer-events:auto}
-.editing .tc .btn,.editing .lpad{outline:1px dashed rgba(231,228,218,.55);outline-offset:2px;cursor:grab;touch-action:none}
+.editing .tc{display:block}.editing .joy{pointer-events:auto}
+.editing .tc .btn,.editing .joy{outline:1px dashed rgba(231,228,218,.55);outline-offset:2px;cursor:grab;touch-action:none}
 .editing .tc .lay-sel{outline:2px solid var(--paper)}
 #lay{position:fixed;left:0;right:0;top:0;z-index:20;padding-top:env(safe-area-inset-top,0px);padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));pointer-events:none}
 .lay-in{pointer-events:auto;margin:8px auto 0;max-width:560px;display:grid;gap:6px;padding:10px 12px;background:rgba(13,15,28,.9);border:1px solid var(--line);border-radius:4px;font-size:12px;color:var(--dim)}
@@ -183,7 +183,7 @@ body.touch .tc{display:block}
     <div id="skbar"></div>
     <div class="tc" id="tc">
       <div class="lpad" id="lpad"><div class="joy idle" id="joy"><i id="knob"></i></div>
-        <button class="btn qs qf" data-k="qf" aria-label="앞으로 대시">▲</button><button class="btn qs qb" data-k="qb" aria-label="뒤로 대시">▼</button><button class="btn qs ql" data-k="ql" aria-label="왼쪽으로 대시">◀</button><button class="btn qs qr" data-k="qr" aria-label="오른쪽으로 대시">▶</button></div>
+        <button class="btn qs qf" id="bQf" data-k="qf" aria-label="앞으로 대시">▲</button><button class="btn qs qb" id="bQb" data-k="qb" aria-label="뒤로 대시">▼</button><button class="btn qs ql" id="bQl" data-k="ql" aria-label="왼쪽으로 대시">◀</button><button class="btn qs qr" id="bQr" data-k="qr" aria-label="오른쪽으로 대시">▶</button></div>
       <button class="btn fire" data-k="atk" id="bAtk">주력을 담은 공격</button>
       <button class="btn ult" data-k="ult" id="bUlt">영역 전개</button>
       <button class="btn gd" data-k="guard" id="bGd">막기</button>
@@ -224,7 +224,7 @@ body.touch .tc{display:block}
 </div>
 
 <div id="lay" hidden><div class="lay-in">
-  <b>버튼 배치</b><span id="layHint">버튼을 끌어서 옮기고, 누른 버튼은 아래에서 크기를 바꿔요. 세로·가로 화면은 따로 저장돼요.</span>
+  <b>버튼 배치</b><span id="layHint">버튼과 조이스틱, ▲▼◀▶ 대시 버튼을 하나씩 끌어서 옮기고, 누른 것은 아래에서 크기를 바꿔요. 세로·가로 화면은 따로 저장돼요.</span>
   <label class="lay-size">크기 <input type="range" id="laySize" min="60" max="160" step="5" value="100"><output id="layVal">100%</output></label>
   <div class="lay-row"><button class="go ghost" id="layReset">이 화면 기본값으로</button><button class="go" id="layDone">완료</button></div>
 </div></div>
@@ -380,7 +380,7 @@ function regMats(g){const mats=[];g.traverse(o=>{if(o.isMesh&&o.material.emissiv
 
 // ================= characters =================
 // 공통 술식: 모든 캐릭터가 사용
-const RCT={kind:'rct',name:'반전술식',cost:30,cd:0,rate:.16}; // 누르는 동안 초당 주력 30 → 초당 최대 체력 16% 회복
+const RCT={kind:'rct',name:'반전술식',cost:30,cd:0,rate:.16,fade:.12,min:.25,bf:.5}; // 쓰는 1초마다 출력 12%p 감소(최저 25%), 흑섬 한 번에 50%p 회복 // 누르는 동안 초당 주력 30 → 초당 최대 체력 16% 회복
 const SD={kind:'sd',name:'간이 영역',cost:20,cd:0,windup:.12,active:.05,recover:.1,dur:4,hp:25,start:F=>openSD(F)};
 // 결계를 펼칠 수 있는지: 결계가 없을 때, 또는 결계 없는 영역(복마어주자)으로 상대 결계를 깰 때
 const canDom=F=>!S.dom||(!!F.def.dom.noBarrier&&S.dom.owner!==F);
@@ -447,27 +447,32 @@ let camOff=0,lastLook=0;
 function nudgeCam(dx){camOff=Math.max(-.9,Math.min(.9,camOff-dx*.006));lastLook=performance.now()}
 const tc=$('tc'),joyEl=$('joy'),kn=$('knob');let lookId=null,lookX=0;const fireP={id:null,x:0};
 // ===== 터치 버튼 배치 (세로/가로 따로 저장) =====
-const LAY_KEY='jjk-touch-layout',LAY_IDS=['lpad','bAtk','bUlt','bS1','bS2','bS3','bRct','bSd','bAmp','bGd','bDash','bRun'];
+const LAY_KEY='jjk-touch-layout',LAY_IDS=['bAtk','bUlt','bS1','bS2','bS3','bRct','bSd','bAmp','bGd','bDash','bRun'],
+  LAY_PAD=['joy','bQf','bQb','bQl','bQr']; // 조이스틱과 ▲▼◀▶는 각자 따로 옮김 (기본 자리에서 얼마나 옮겼는지 저장)
 const layMode=()=>innerWidth>innerHeight?'land':'port';
 function layLoad(){try{return JSON.parse(localStorage.getItem(LAY_KEY)||'{}')||{}}catch(_){return {}}}
 function laySave(L){try{localStorage.setItem(LAY_KEY,JSON.stringify(L))}catch(_){}}
-function layApply(){const L=layLoad()[layMode()]||{};
+function layApply(){const L=layLoad()[layMode()]||{},r=tc.getBoundingClientRect(),W=r.width||innerWidth,H=r.height||innerHeight;
   for(const id of LAY_IDS){const el=$(id);if(!el)continue;const v=L[id];
     if(!v){el.style.left=el.style.top=el.style.right=el.style.bottom=el.style.transform=el.style.margin='';continue}
-    el.style.left=(v.x*100)+'%';el.style.top=(v.y*100)+'%';el.style.right='auto';el.style.bottom='auto';el.style.margin='0';el.style.transform=`translate(-50%,-50%) scale(${v.s||1})`}}
+    el.style.left=(v.x*100)+'%';el.style.top=(v.y*100)+'%';el.style.right='auto';el.style.bottom='auto';el.style.margin='0';el.style.transform=`translate(-50%,-50%) scale(${v.s||1})`}
+  for(const id of LAY_PAD){const el=$(id);if(!el)continue;const v=L[id];el.style.transform=v?`translate(${v.dx*W}px,${v.dy*H}px) scale(${v.s||1})`:''}}
 let laySel=null,layDrag=null;
 function layOpen(){document.body.classList.add('editing');$('select').hidden=true;$('lay').hidden=false;laySel=null;layApply();laySync()}
 function layClose(){document.body.classList.remove('editing');$('lay').hidden=true;$('select').hidden=false;if(laySel)$(laySel).classList.remove('lay-sel');laySel=null}
 function laySync(){const v=laySel&&(layLoad()[layMode()]||{})[laySel];const n=Math.round(((v&&v.s)||1)*100);$('laySize').value=n;$('layVal').textContent=n+'%';$('laySize').disabled=!laySel}
 function layPut(id,x,y,sc){const L=layLoad(),m=L[layMode()]||(L[layMode()]={}),o=m[id]||{};
+  if(LAY_PAD.includes(id)){m[id]={dx:x!=null?x:(o.dx||0),dy:y!=null?y:(o.dy||0),s:sc!=null?sc:(o.s||1)};laySave(L);layApply();return}
   const r=tc.getBoundingClientRect();if(x==null){if(o.x!=null){x=o.x;y=o.y}else{const b=$(id).getBoundingClientRect();x=(b.left+b.width/2-r.left)/r.width;y=(b.top+b.height/2-r.top)/r.height}}
   m[id]={x:Math.max(.03,Math.min(.97,x)),y:Math.max(.05,Math.min(.97,y)),s:sc!=null?sc:(o.s||1)};laySave(L);layApply()}
 tc.addEventListener('pointerdown',e=>{if(!document.body.classList.contains('editing'))return;e.stopPropagation();e.preventDefault();
-  const el=e.target.closest('.lpad')||e.target.closest('.tc > .btn');if(!el||!el.id)return;
+  const el=e.target.closest('.joy')||e.target.closest('.lpad .btn')||e.target.closest('.tc > .btn');if(!el||!el.id)return;
   if(laySel)$(laySel).classList.remove('lay-sel');laySel=el.id;el.classList.add('lay-sel');laySync();
-  const b=el.getBoundingClientRect();layDrag={id:el.id,pid:e.pointerId,dx:e.clientX-(b.left+b.width/2),dy:e.clientY-(b.top+b.height/2)};try{tc.setPointerCapture(e.pointerId)}catch(_){}},true);
+  const b=el.getBoundingClientRect(),o=(layLoad()[layMode()]||{})[el.id]||{};
+  layDrag={id:el.id,pid:e.pointerId,px:e.clientX,py:e.clientY,ox:o.dx||0,oy:o.dy||0,dx:e.clientX-(b.left+b.width/2),dy:e.clientY-(b.top+b.height/2)};try{tc.setPointerCapture(e.pointerId)}catch(_){}},true);
 tc.addEventListener('pointermove',e=>{if(!layDrag||e.pointerId!==layDrag.pid)return;e.stopPropagation();const r=tc.getBoundingClientRect();
-  layPut(layDrag.id,(e.clientX-layDrag.dx-r.left)/r.width,(e.clientY-layDrag.dy-r.top)/r.height)},true);
+  if(LAY_PAD.includes(layDrag.id))layPut(layDrag.id,layDrag.ox+(e.clientX-layDrag.px)/r.width,layDrag.oy+(e.clientY-layDrag.py)/r.height);
+  else layPut(layDrag.id,(e.clientX-layDrag.dx-r.left)/r.width,(e.clientY-layDrag.dy-r.top)/r.height)},true);
 ['pointerup','pointercancel'].forEach(t=>tc.addEventListener(t,e=>{if(layDrag&&e.pointerId===layDrag.pid)layDrag=null},true));
 $('layoutBtn').onclick=layOpen;$('layDone').onclick=layClose;
 $('layReset').onclick=()=>{const L=layLoad();delete L[layMode()];laySave(L);layApply();laySync()};
@@ -480,7 +485,7 @@ tc.addEventListener('pointerdown',e=>{
   if(btn){e.preventDefault();try{btn.setPointerCapture(e.pointerId)}catch(_){}btn.classList.add('on');TB[btn.dataset.k]=1;TBP[btn.dataset.k]=performance.now();btn._pid=e.pointerId;
     if(btn.dataset.k==='atk'){fireP.id=e.pointerId;fireP.x=e.clientX}return}
   const r=stage.getBoundingClientRect();
-  const lr=$('lpad').getBoundingClientRect(),lpLeft=lr.left+lr.width/2<r.left+r.width/2,inPad=e.clientX>=lr.left-20&&e.clientX<=lr.right+20&&e.clientY>=lr.top-20&&e.clientY<=lr.bottom+20;
+  const lr=joyEl.getBoundingClientRect(),lpLeft=lr.left+lr.width/2<r.left+r.width/2,inPad=e.clientX>=lr.left-30&&e.clientX<=lr.right+30&&e.clientY>=lr.top-30&&e.clientY<=lr.bottom+30;
   if((inPad||(lpLeft?e.clientX-r.left<r.width*.42:e.clientX-r.left>r.width*.58))&&joy.id===null){const jr=joyEl.getBoundingClientRect();joy.id=e.pointerId;joy.ox=jr.left+jr.width/2;joy.oy=jr.top+jr.height/2;joyMove(e);joyEl.classList.remove('idle')}
   else if(lookId===null){lookId=e.pointerId;lookX=e.clientX}
   try{tc.setPointerCapture(e.pointerId)}catch(_){}
@@ -542,7 +547,7 @@ function around(c,r){const a=Math.random()*PI*2;const v=c.clone();v.x+=Math.cos(
 function makeFighter(side,id,human){
   const def=CH[id],m=def.build();regMats(m);scene.add(m);
   const F={side,id,def,human,m,pos:new V3(0,0,side?-5:5),face:side?0:PI,hp:def.hp,mp:100,state:'free',act:null,t:0,inv:0,stag:0,guard:false,guardAt:-9,parryAt:-9,aiParry:false,
-    dashT:0,dashCd:0,dashDir:new V3(),kb:new V3(),lv:null,hitOnce:false,combo:0,lastEnd:-9,queued:false,cd:{tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0},infG:100,infBrk:0,infLast:-9,ampOn:false,counterT:0,sdT:0,sdHit:0,zoneT:0,zone:0,emp:0,pull:null,flash:0,koT:0,
+    dashT:0,dashCd:0,dashDir:new V3(),kb:new V3(),lv:null,hitOnce:false,combo:0,lastEnd:-9,queued:false,cd:{tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0},infG:100,infBrk:0,infLast:-9,ampOn:false,rctOut:1,counterT:0,sdT:0,sdHit:0,zoneT:0,zone:0,emp:0,pull:null,flash:0,koT:0,
     ai:{next:.6,strafe:1,sT:0,seen:-1,react:null,guardUntil:0,dodge:null}};
   F.sh=blob(def.r*1.1);
   F.ring=new THREE.Mesh(new THREE.RingGeometry(def.r+.2,def.r+.34,32),basic(side?0xff6a5a:0x9fe6d6,{transparent:true,opacity:.75,side:THREE.DoubleSide,depthWrite:false}));F.ring.rotation.x=-PI/2;scene.add(F.ring);
@@ -570,7 +575,7 @@ function setupFighters(){
 function resetRound(){
   clearAll();
   for(const F of S.f){Object.assign(F,{hp:F.def.hp,mp:100,state:'free',act:null,inv:0,stag:0,guard:false,dashT:0,dashCd:0,lv:null,combo:0,queued:false,pull:null,koT:0,aiParry:false});
-    F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.counterT=0;F.otT=0;F.infG=100;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);F.pos.set(0,0,F.side?-5:5);F.face=F.side?0:PI;F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
+    F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.counterT=0;F.otT=0;F.infG=100;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);F.pos.set(0,0,F.side?-5:5);F.face=F.side?0:PI;F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
 }
 function startMatch(){
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(_){}
@@ -691,7 +696,7 @@ function swingHit(F,step){slashFx(F,step);
 function zoneEff(F){return F.zoneT>0?Math.max(.5,.8-.05*F.zone):1}   // 주력 소모 배율 (1회 0.75, 4회 0.6)
 function zoneRct(F){return F.zoneT>0?1.4+.15*F.zone:1}               // 반전술식 회복 배율 (1회 1.55, 4회 2.0)
 function bfChance(F,step){return Math.min(.45,(F.zoneT>0?.14+.06*F.zone:.04)+(step===3?.04:0)+(F.def.bf||0))}
-function blackFlash(F,O){F.zone=Math.min(4,F.zone+1);F.zoneT=6;F.mp=Math.min(100,F.mp+10);
+function blackFlash(F,O){F.zone=Math.min(4,F.zone+1);if(F.rctOut<1){F.rctOut=Math.min(1,F.rctOut+RCT.bf);setTimeout(()=>pop(F,'반전 출력 '+Math.round(F.rctOut*100)+'%','#b8ffd8'),450)}F.zoneT=6;F.mp=Math.min(100,F.mp+10);
   pop(F,F.zone>1?`흑섬 ×${F.zone}`:'흑섬!','#ff3a4a');S.stop=Math.max(S.stop,.2);flash(.35);S.shake=Math.max(S.shake,.5);
   snd(55,.5,'sawtooth',.09,-20);snd(2400,.25,'square',.03,-2200);
   const c=O.pos.clone().setY(1.1);burst(c,0x000000,22,10);burst(c,0xff1a3a,18,9);
@@ -909,7 +914,7 @@ function updateFighter(F,I,dt){
   if(F.state==='ko'){F.koT+=dt;return}
   if(S.dom&&S.dom.owner!==F&&!(F.sdT>0))dt*=.55;
   F.rcting=!!I.rct&&F.mp>1&&F.hp<F.def.hp;
-  if(F.rcting){F.mp=Math.max(0,F.mp-RCT.cost*(F.def.six?.75:1)*zoneEff(F)*dt);F.hp=Math.min(F.def.hp,F.hp+F.def.hp*RCT.rate*zoneRct(F)*dt);
+  if(F.rcting){F.mp=Math.max(0,F.mp-RCT.cost*(F.def.six?.75:1)*zoneEff(F)*dt);F.hp=Math.min(F.def.hp,F.hp+F.def.hp*RCT.rate*F.rctOut*zoneRct(F)*dt);F.rctOut=Math.max(RCT.min,F.rctOut-RCT.fade*dt);
     if(Math.random()<.35)burst(F.pos.clone().setY(.4+Math.random()*1.5),0xb8ffd8,1,2);if(!F.rcSnd||S.t-F.rcSnd>.5){F.rcSnd=S.t;snd(660,.4,'sine',.025,220)}}
   else F.mp=Math.min(100,F.mp+(S.dom?0:4*(F.def.six?1.25:1))*dt);
   F.inv=Math.max(0,F.inv-dt);F.stag=Math.max(0,F.stag-dt);F.dashCd-=dt;for(const k in F.cd)F.cd[k]-=dt;if(F.counterT>0){F.counterT-=dt;if(F.counterT<=0)F.tg.visible=false}F.emp=Math.max(0,F.emp-dt);
@@ -1028,7 +1033,7 @@ let hudKey='';
 function hud(){
   const a=S.f[S.me],b=S.f[1-S.me];const k=[a.hp,a.mp|0,b.hp,b.mp|0,S.wins,S.round,a.cd.s1>0,Math.ceil(a.cd.s1*10),Math.ceil(a.cd.s2*10),Math.ceil(a.cd.s3*10),Math.ceil(a.cd.ult*10),!!S.dom].join('|');if(k===hudKey)return;hudKey=k;
   for(const F of S.f){const i=F.side;$('hp'+i).style.width=Math.max(0,F.hp/F.def.hp*100)+'%';$('mp'+i).style.width=F.mp+'%';$('gb'+i).classList.toggle('full',F.mp>=100);
-    $('t'+i).textContent='주력 '+(F.mp|0)+(F.zoneT>0?' · 존'+(F.zone>1?' ×'+F.zone:''):'');[...$('rd'+i).children].forEach((d,j)=>d.classList.toggle('on',S.wins[i]>j))}
+    $('t'+i).textContent='주력 '+(F.mp|0)+(F.zoneT>0?' · 존'+(F.zone>1?' ×'+F.zone:''):'')+(F.rctOut<.995?' · 반전 '+Math.round(F.rctOut*100)+'%':'');[...$('rd'+i).children].forEach((d,j)=>d.classList.toggle('on',S.wins[i]>j))}
   $('rlab').textContent=S.round+'라운드';
   $('bUlt').classList.toggle('ready',a.cd.ult<=0&&a.mp>=ULT.cost&&canDom(a));$('bUlt').classList.toggle('low',a.cd.ult>0||a.mp<ULT.cost||!canDom(a));
   for(const F of S.f){const i=F.side;$('ib'+i).hidden=!F.def.inf;if(F.def.inf){$('ig'+i).style.width=(F.infBrk>0?(1-F.infBrk/INF_CD)*100:F.infG)+'%';$('ib'+i).classList.toggle('brk',F.infBrk>0)}}
@@ -1058,7 +1063,7 @@ function loop(ts){
 
 // ================= menus =================
 function seg(id,val,on){document.querySelectorAll('#'+id+' button').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.v===val));b.onclick=()=>on(b.dataset.v)})}
-const COMMON='공통 · <b>흑섬</b> 주력을 담은 공격이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · 흑섬 뒤 6초는 <b>존</b>: 주력 소모 25~40% 감소, 반전술식 회복 1.5~2배 · <b>영역전연</b> 켜 둔 동안 근접 공격이 무하한을 뚫음, 초당 주력 8, 대신 술식을 쓰면 풀림 · <b>막기</b> 누르고 있는 동안만, 누른 직후 맞으면 간파 · <b>반전술식</b> 누르고 있는 동안 주력을 써서 계속 회복(맞는 중·기절 중에도), 회복 중엔 느려짐 · <b>결계</b> 펼친 사람의 공격은 전부 필중 · <b>간이 영역</b> 언제든 4초, 상대 결계 효과(시전 충격·반복 공격)를 막고 전개한 사람의 필중을 지움(직접 공격은 막아야 함), 들어오는 상대를 자동으로 벰, 피해 25를 받으면 깨짐';
+const COMMON='공통 · <b>흑섬</b> 주력을 담은 공격이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · 흑섬 뒤 6초는 <b>존</b>: 주력 소모 25~40% 감소, 반전술식 회복 1.5~2배 · <b>영역전연</b> 켜 둔 동안 근접 공격이 무하한을 뚫음, 초당 주력 8, 대신 술식을 쓰면 풀림 · <b>막기</b> 누르고 있는 동안만, 누른 직후 맞으면 간파 · <b>반전술식</b> 누르고 있는 동안 주력을 써서 계속 회복(맞는 중·기절 중에도), 회복 중엔 느려짐, 쓸수록 출력이 떨어지고(최저 25%) 흑섬을 터뜨리면 출력과 주력을 되찾음 · <b>결계</b> 펼친 사람의 공격은 전부 필중 · <b>간이 영역</b> 언제든 4초, 상대 결계 효과(시전 충격·반복 공격)를 막고 전개한 사람의 필중을 지움(직접 공격은 막아야 함), 들어오는 상대를 자동으로 벰, 피해 25를 받으면 깨짐';
 function keysText(){return keysText0()+'<br><span style="color:var(--dim)">'+COMMON+'</span>'}
 function keysText0(){
   if(S.mode==='net')return '<kbd>WASD</kbd> 이동 · 이동 키 두 번 톡 또는 <kbd>Space</kbd> · 대시 · 좌클릭·<kbd>[</kbd>·<kbd>C</kbd> 주력을 담은 공격 (누르고 있으면 연속) · 우클릭·<kbd>Z</kbd> 비술1 · <kbd>X</kbd> 비술2 · <kbd>V</kbd> 비술3 · <kbd>F</kbd> 결계 · <kbd>R</kbd> 반전술식 · <kbd>G</kbd> 간이 영역 · <kbd>T</kbd> 영역전연 · <kbd>Shift</kbd>·<kbd>K</kbd> 막기(꾹) · 시점 자동 락온 (마우스 끌기·<kbd>Q</kbd><kbd>E</kbd>·<kbd>←</kbd><kbd>→</kbd>로 살짝 조정)<br>폰: 왼쪽 화면 어디를 눌러도 조이스틱, 조이스틱 둘레 ▲▼◀▶ 버튼으로 그 방향 대시, 대시 버튼은 조이스틱 방향으로(안 밀면 뒤로) 대시, 오른쪽 화면을 끌면 시점 조정, 주력을 담은 공격 버튼은 누른 채 끌어도 시점이 돌아요.<br>친구에게 이 페이지를 공유한 뒤, 한 명이 방을 만들고 다른 한 명이 같은 코드로 들어오세요.';
