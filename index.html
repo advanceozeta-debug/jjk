@@ -335,6 +335,39 @@ const CH={
   s2:{name:'박치기',desc:'몸통으로 들이받기',cost:20,cd:4,windup:.4,active:.8,recover:.6,range:[5,14],start:F=>lunge(F,12),contact:15},
   s3:{name:'뿌리 솟기',desc:'상대 쪽으로 뿌리가 줄지어 솟음',cost:25,cd:5,windup:.45,active:.1,recover:.5,red:true,range:[0,12],ev:[[0,F=>{const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0),l=d.length();d.normalize();for(let i=1;i<=5;i++){const c=F.pos.clone().addScaledVector(d,1.5+i/5*(l+.5));clampV(c,A);tele(F,c,1.3,.4+i*.12,10,0xb07040,.8)}}]]},
   dom:{name:'서낭당',han:'城隍堂',sky:['#0c0604','#2e140c','#5a2a18'],acc:0xff7a3a,every:1.5,tick:F=>{wave(F,9,12,9);F.hp=Math.min(F.def.hp,F.hp+3)},desc:'충격파가 거듭 퍼지고 체력이 회복됨'}},
+  Gojo Satoru:{ name:'고죠 사토루', hp:1000, ce:300, color:'#7fb8ff',
+  // 패시브: 무하한 — updateFighter / hit 패치에서 처리
+  s1:{ name:'술식순전 · 창', cost:40, cd:4,
+    windup:0.25, active:0.6, recover:0.3,
+    ev:[[0, F=>{
+      const T=opp(F);
+      // 상대 앞쪽에 끌어당기는 점 생성 → 0.6초 동안 updateFighter에서 끌어당김
+      F.blueT=0.6;
+      F.blueX=F.x+F.face*180;
+      hit(F,T,40,{stun:0.4});
+    }]]
+  },
+  s2:{ name:'술식반전 · 혁', cost:70, cd:7,
+    windup:0.45, active:0.2, recover:0.4,
+    ev:[[0, F=>{
+      shoot(F,{ x:F.x+F.face*40, y:F.y-40, vx:F.face*900, vy:0,
+        r:22, dmg:120, color:'#ff4a5c', life:0.8,
+        stun:0.6, knock:F.face*700 });        // 맞으면 크게 밀려남
+    }]]
+  },
+  s3:{ name:'허식 · 자', cost:180, cd:20,
+    windup:1.0, active:0.5, recover:0.8,       // 창·혁을 합치는 긴 준비
+    ev:[
+      [0,   F=>{ F.superArmorT=1.0; }],          // 준비 중 끊기지 않게
+      [0.2, F=>{
+        shoot(F,{ x:F.x+F.face*50, y:F.y-50, vx:F.face*1300, vy:0,
+          r:60, dmg:320, color:'#aa5aff', life:1.2,
+          stun:1.0, pierce:true, eraseShots:true }); // 경로의 투사체 소멸
+        tele(F,{ x:F.x+F.face*400, w:800, delay:0.15, dmg:60, stun:0.3, color:'#aa5aff' });
+      }]
+    ]
+  }
+},
 };
 const IDS=Object.keys(CH);
 for(const id of IDS){CH[id].s1.key='s1';CH[id].s2.key='s2';CH[id].s3.key='s3'}ULT.key='ult';
