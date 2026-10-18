@@ -227,7 +227,7 @@ body.touch .tc{display:block}
       </div>
       <button class="go" id="start">대전 시작</button>
       <button class="go ghost" id="layoutBtn">터치 버튼 배치 바꾸기</button>
-      <p>세 가지 술식과 결계를 사용해 싸워요. 스쿠나의 푸가는 해와 접촉 팔을 모두 맞힌 뒤에 열려요. 술식을 쓸 때마다 주력이 들고 각자 쿨타임이 돌아요. 주력은 가득 찬 채로 시작하고, 천천히 차오르거나 공격을 맞혀서 채워요. 상대 머리 위가 붉게 빛나면 막을 수 없는 공격이니 피하세요.</p>
+      <p>세 가지 술식과 결계를 사용해 싸워요. 스쿠나의 푸가는 해와 팔을 모두 맞힌 뒤에 열려요. 술식을 쓸 때마다 주력이 들고 각자 쿨타임이 돌아요. 주력은 가득 찬 채로 시작하고, 천천히 차오르거나 공격을 맞혀서 채워요. 상대 머리 위가 붉게 빛나면 막을 수 없는 공격이니 피하세요.</p>
       <div class="keys" id="keys"></div>
     </div></div>
     <div class="over" id="end" hidden><div class="wrap">
@@ -521,8 +521,8 @@ const CH={
   atk:{range:2.5,dmg:[5,5,8],wu:.07,col:0xff4a3a},
   tal:{name:'불씨',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:16,dmg:4,col:0xff7a1a})},
   s1:{name:'해',desc:'보이지 않을 만큼 빠른 참격을 날림',cost:20,cd:2.5,windup:.12,active:.1,recover:.2,range:[2,13],ev:[[0,F=>shoot(F,{kind:'wave',spd:28,dmg:9,col:0xff3a4a,l:.7,su:1})]]},
-  s2:{name:'팔',desc:'몸에 닿은 한 상대를 6연속으로 벰 · 상대 최대 체력·최대 주력에 맞춰 피해 증가',cost:30,cd:5,windup:.3,active:.6,recover:.35,red:true,contactCleave:true,range:[0,1.5],ev:[[0,F=>cleave(F)]]},
-  s3:{name:'개 · 푸가',desc:'같은 라운드에 해 계열과 접촉 팔을 모두 적중시키면 개방 · 불화살과 폭발, 자신의 영역 안에서는 위력 120%',cost:45,cd:10,windup:.8,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>fuga(F)]]},
+  s2:{name:'팔',desc:'6m 안의 한 상대를 지정해 몸에 참격 6연타 · 상대 최대 체력·최대 주력에 비례해 피해 증가',cost:30,cd:5,windup:.3,active:.6,recover:.35,red:true,targetCleave:true,range:[0,6],ev:[[0,F=>cleave(F)]]},
+  s3:{name:'개 · 푸가',desc:'같은 라운드에 해 계열과 팔을 모두 적중시키면 개방 · 불화살과 폭발, 자신의 영역 안에서는 위력 120%',cost:45,cd:10,windup:.8,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>fuga(F)]]},
   dom:{name:'복마어주자',han:'伏魔御廚子',noBarrier:true,sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 반지름 200m로 펼쳐져 상대를 쉬지 않고 벰, 상대 결계가 펼쳐져 있어도 바깥에서 깨고 펼칠 수 있음'}},
 };
 const HP_MULT=3; // 판이 너무 빨리 끝나지 않게 모든 캐릭터 체력 3배
@@ -539,7 +539,7 @@ const GOJO_MAX={
 const SLASH_BARRAGE={damage:3,volleys:9,interval:.14,speed:28,range:24,spread:.13};
 const SUKUNA_MAX={
   s1:Object.assign({},CH.yeom.s1,{name:'연속 참격',desc:'몸 앞에서 무수한 참격을 연사 · 9연타, 최대 피해 27',cost:45,maxOutput:true,windup:.4,ev:[[0,F=>slashBarrage(F)]]}),
-  s2:Object.assign({},CH.yeom.s2,{name:'그물 참격',desc:'끝이 뻗은 井자 그물 참격이 전방을 관통 · 피해 36',cost:50,maxOutput:true,windup:.6,active:.25,contactCleave:false,range:[2,16],ev:[[0,F=>shoot(F,{kind:'net',spd:24,dmg:36,col:0xff3a4a,l:1.35,width:4.1,pierce:1,heavy:1,stun:.55})]]})
+  s2:Object.assign({},CH.yeom.s2,{name:'그물 참격',desc:'끝이 뻗은 井자 그물 참격이 전방을 관통 · 피해 36',cost:50,maxOutput:true,windup:.6,active:.25,targetCleave:false,range:[2,16],ev:[[0,F=>shoot(F,{kind:'net',spd:24,dmg:36,col:0xff3a4a,l:1.35,width:4.1,pierce:1,heavy:1,stun:.55})]]})
 };
 const MAX_SKILLS={muha:GOJO_MAX,yeom:SUKUNA_MAX};
 const skillMove=(F,k,max=false)=>max&&MAX_SKILLS[F.id]?.[k]||F.def[k];
@@ -746,7 +746,7 @@ function infHit(T,amt){T.infG=Math.max(0,T.infG-amt*(T.def.six?.8:1)*zoneEff(T))
 function poison(T){if(T.def.noPoison){if(!T.psPop||S.t-T.psPop>2){T.psPop=S.t;pop(T,'독 면역','#b8ffb0')}return}
   T.psN=Math.min(3,(T.psT>0?T.psN:0)+1);T.psT=4}
 function stun(F,t){F.state='stun';F.t=t;F.act=null;F.lv=null;F.tg.visible=false;F.guard=false;F.queued=false}
-// 해 계열 = 1, 몸에 접촉한 팔 = 2. 둘 다 실제 적중한 뒤 해당 라운드 동안 푸가 개방.
+// 해 계열 = 1, 대상의 몸을 베는 팔 = 2. 둘 다 실제 적중한 뒤 해당 라운드 동안 푸가 개방.
 const fugaReady=F=>F.id!=='yeom'||(F.sukunaHits&3)===3;
 const fugaHint=F=>'해 '+(F.sukunaHits&1?'적중':'미적중')+' · 팔 '+(F.sukunaHits&2?'적중':'미적중');
 function sukunaHit(F,tech){if(!F||F.remote||F.id!=='yeom'||(tech!==1&&tech!==2)||(F.sukunaHits&tech))return;
@@ -864,7 +864,7 @@ function progressAct(F,dt){
   if(a.phase==='windup'){F.tg.scale.setScalar(1.2+Math.sin(S.t*30)*.3);
     if(a.t<=0){a.phase='active';a.t=mv.active;a.el=0;F.tg.visible=false;if(mv.start)mv.start(F);runEv(F)}}
   else if(a.phase==='active'){a.el+=dt;runEv(F);if(F.act!==a)return;
-    if(mv.contactCleave){updateCleave(F,dt);if(F.act!==a)return}
+    if(mv.targetCleave){updateCleave(F,dt);if(F.act!==a)return}
     if(F.lv){F.pos.addScaledVector(F.lv,dt);if(Math.random()<.5)burst(F.pos.clone().setY(.6),0xe7e4da,1,1);
       if(!F.hitOnce)for(const E of foes(F))if(Math.hypot(F.pos.x-E.pos.x,F.pos.z-E.pos.z)<F.def.r+E.def.r+.35){F.hitOnce=true;hit(F,E,mv.contact,{big:true});break}if(F.act!==a)return}
     if(mv.kind==='atk'&&a.el<.1&&Math.hypot(F.pos.x-O.pos.x,F.pos.z-O.pos.z)>F.def.r+O.def.r+1)F.pos.addScaledVector(fwd(F.face),3.5*dt);
@@ -1057,25 +1057,24 @@ function openSD(F){F.sdT=SD.dur;F.sdHit=0;F.sdHp=SD.hp;
 function sdDamage(T,dmg){if(!(T.sdT>0)||dmg<=0)return;T.sdHp-=dmg;
   if(T.sdHp<=0){T.sdT=0;if(T.sdm)T.sdm.visible=false;pop(T,'간이 영역 붕괴','#e7e4da');burst(T.pos.clone().setY(.3),0xe7e4da,24,8);snd(300,.3,'square',.04,-200)}}
 
-const CLEAVE={hits:6,interval:.08,reach:.4};
-function cleaveTouches(F,T){const d=T.pos.clone().sub(F.pos).setY(0),l=d.length();
-  return T.state!=='ko'&&T.side!==F.side&&l<=F.def.r+T.def.r+CLEAVE.reach&&(l<.1||d.divideScalar(l).dot(fwd(F.face))>.35)}
-// 접촉 순간 최대 능력치로 총 피해를 정함. 소모한 주력·남은 HP 때문에 연타 도중 약해지지 않음.
+const CLEAVE={hits:6,interval:.08,range:6};
+function cleaveInRange(F,T){return T.state!=='ko'&&T.side!==F.side&&Math.hypot(T.pos.x-F.pos.x,T.pos.z-F.pos.z)<=CLEAVE.range}
+// 표적 지정 순간 최대 능력치로 총 피해를 정함. 소모한 주력·남은 HP 때문에 연타 도중 약해지지 않음.
 const cleaveDamage=T=>Math.round(10+T.def.hp/HP_MULT*.08+MPX(T)*.06);
-function cleave(F){const a=F.act;if(!a?.mv.contactCleave||a.cleave)return;
-  const T=foes(F).filter(T=>cleaveTouches(F,T)).sort((x,y)=>x.pos.clone().sub(F.pos).lengthSq()-y.pos.clone().sub(F.pos).lengthSq())[0];
-  if(!T)return;a.cleave={target:T,damage:cleaveDamage(T),hits:0,t:0};a.t=Math.max(a.t,(CLEAVE.hits-1)*CLEAVE.interval+.05);slashFx(F,2);updateCleave(F,0)}
-function updateCleave(F,dt){const a=F.act;if(!a?.mv.contactCleave)return;
+function cleave(F){const a=F.act;if(!a?.mv.targetCleave||a.cleave)return;
+  const T=foes(F).filter(T=>cleaveInRange(F,T)).sort((x,y)=>x.pos.clone().sub(F.pos).lengthSq()-y.pos.clone().sub(F.pos).lengthSq())[0];
+  if(!T)return;F.face=Math.atan2(T.pos.x-F.pos.x,T.pos.z-F.pos.z);a.cleave={target:T,damage:cleaveDamage(T),hits:0,t:0};a.t=Math.max(a.t,(CLEAVE.hits-1)*CLEAVE.interval+.05);updateCleave(F,0)}
+function updateCleave(F,dt){const a=F.act;if(!a?.mv.targetCleave)return;
   if(!a.cleave){cleave(F);return}const c=a.cleave;c.t+=dt;
   while(F.act===a&&c.hits<CLEAVE.hits&&c.t+1e-6>=c.hits*CLEAVE.interval){
-    const T=c.target;if(!cleaveTouches(F,T)){c.hits=CLEAVE.hits;break}
+    const T=c.target;if(S.state!=='fight'||T.state==='ko'||!S.f.includes(T)||T.side===F.side){c.hits=CLEAVE.hits;break}
     const i=c.hits++,last=c.hits===CLEAVE.hits,dmg=Math.floor((i+1)*c.damage/CLEAVE.hits)-Math.floor(i*c.damage/CLEAVE.hits);
-    dismantleFx(T,.75);dismantleFx(T,.55);snd(1100+i*90,.08,'sawtooth',.025,-800);
-    const r=hit(F,T,dmg,{big:true,stun:last?.3:.12,kb:last?5:0,su:2});if(r!=='hit'&&r!=='sent'&&r!=='block')c.hits=CLEAVE.hits;
+    dismantleFx(T,.75,true);dismantleFx(T,.55,true);snd(1100+i*90,.08,'sawtooth',.025,-800);
+    const r=hit(F,T,dmg,{big:true,proj:true,stun:last?.3:.12,kb:last?5:0,su:2});if(r!=='hit'&&r!=='sent'&&r!=='block')c.hits=CLEAVE.hits;
   }}
-function dismantleFx(O,s=1){const c=O.pos.clone().setY(.6+Math.random()*1.3);const a=Math.random()*PI;
+function dismantleFx(O,s=1,follow=false){const c=O.pos.clone().setY(.6+Math.random()*1.3);const a=Math.random()*PI;
   const m=new THREE.Mesh(new THREE.PlaneGeometry(1.9*s,.05),basic(0xff3a4a,{transparent:true,opacity:.95,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
-  m.position.copy(c);m.rotation.set(Math.random()*PI,Math.random()*PI,a);scene.add(m);S.fx.push({m,mat:m.material,t:0,dur:.18})}
+  m.position.copy(c);m.rotation.set(Math.random()*PI,Math.random()*PI,a);scene.add(m);S.fx.push({m,mat:m.material,t:0,dur:.18,follow:follow?O:null,offset:follow?c.clone().sub(O.pos):null})}
 function fuga(F){if(!fugaReady(F))return;const O=opp(F),amp=!!domOf(F),k=amp?1.2:1;
   shoot(F,{kind:'orb',spd:19,dmg:16*k,col:0xff7a1a,big:1,heavy:1,l:1.2});
   const at=O.pos.clone();tele(F,at,amp?2.9:2.4,.75,12*k,0xff7a1a,amp?.6:.4);
@@ -1233,7 +1232,7 @@ function aiInput(F,dt){
   const O=opp(F),D=DIFF[S.diff],ai=F.ai,I={move:new V3(),press:{},guard:false,guardTap:false};
   const d=O.pos.clone().sub(F.pos).setY(0),l=d.length()||.01;d.divideScalar(l);
   if(O.state==='act'&&O.act.id!==ai.seen){ai.seen=O.act.id;const mv=O.act.mv;
-    if(mv.kind!=='atk'||l<O.def.atk.range+O.def.r+2)ai.react={at:S.t+D.react*(.7+Math.random()*.6),red:!!mv.red,melee:mv.kind==='atk'||!!mv.contact||!!mv.contactCleave}}
+    if(mv.kind!=='atk'||l<O.def.atk.range+O.def.r+2)ai.react={at:S.t+D.react*(.7+Math.random()*.6),red:!!mv.red,melee:mv.kind==='atk'||!!mv.contact}}
   if(ai.react&&S.t>=ai.react.at){const r=ai.react;ai.react=null;
     if(r.red||r.melee&&O.def.armor&&Math.random()<.3){if(Math.random()<D.dodge)ai.dodge=new V3(-d.z,0,d.x).multiplyScalar(Math.random()<.5?1:-1).addScaledVector(d,-.4)}
     else if(Math.random()<D.guard){ai.guardUntil=S.t+.55;F.aiParry=Math.random()<D.parry}}
@@ -1246,8 +1245,7 @@ function aiInput(F,dt){
   if(ai.dodge){ai.dodgeMove=ai.dodge.clone().setY(0).normalize();ai.dodgeT=S.t+.55;ai.dodge=null}
   if(S.t<(ai.dodgeT||0)&&F.state==='free'){I.move.copy(ai.dodgeMove);return I}
   ai.sT-=dt;if(ai.sT<=0){ai.sT=.8+Math.random()*1.4;ai.strafe=Math.random()<.5?-1:1}
-  const keep=F.id==='yeom'&&F.cd.s2<=0&&!(F.sukunaHits&2)?F.def.r+O.def.r+.12:F.def.keep;
-  const radial=Math.max(-1,Math.min(1,(l-keep)*.9));
+  const radial=Math.max(-1,Math.min(1,(l-F.def.keep)*.9));
   I.move.copy(d).multiplyScalar(radial).add(new V3(-d.z,0,d.x).multiplyScalar(.55*ai.strafe));if(I.move.length()>1)I.move.normalize();
   ai.next-=dt;
   if(ai.next<=0&&!I.guard&&F.state==='free'){ai.next=D.think*(.6+Math.random()*.8);
@@ -1257,7 +1255,7 @@ function aiInput(F,dt){
     if(F.burnT>0&&F.mp>=cost(F,BRAIN)&&l>4)c.push(['brain',12]);
     if(!F.ampOn&&F.mp>35&&infOn(O)&&l<4.5)c.push(['amp',6]);if(F.ampOn&&(l>7||!infOn(O)||F.mp<12))c.push(['amp',20]);
 
-    for(const k of['s1','s2','s3']){const s=F.def[k],inRange=s.contactCleave?cleaveTouches(F,O):l>=s.range[0]&&l<=s.range[1];if((k!=='s3'||fugaReady(F))&&F.cd[k]<=0&&F.mp>=s.cost+(F.mp>80?0:10)&&inRange)c.push([k,2])}
+    for(const k of['s1','s2','s3']){const s=F.def[k],inRange=s.targetCleave?cleaveInRange(F,O):l>=s.range[0]&&l<=s.range[1];if((k!=='s3'||fugaReady(F))&&F.cd[k]<=0&&F.mp>=s.cost+(F.mp>80?0:10)&&inRange)c.push([k,2])}
     if(c.length&&Math.random()<D.aggr){let r=Math.random()*c.reduce((s,x)=>s+x[1],0);for(const x of c){r-=x[1];if(r<=0){I.press[x[0]]=true;break}}}}
   if(F.state==='act'&&F.act.mv.kind==='atk'&&F.combo<3&&Math.random()<D.aggr*dt*12)I.press.atk=true;
   return I;
@@ -1389,7 +1387,7 @@ function syncF(F,dt){
 }
 function sync(dt){
   for(const F of S.f)syncF(F,dt);
-  for(const f of S.fx){f.t+=dt;f.mat.opacity=.85*(1-f.t/f.dur);if(f.blastRadius)f.m.scale.setScalar(1+(f.blastRadius-1)*Math.pow(Math.min(1,f.t/.22),.7));else f.m.scale.multiplyScalar(1+dt*1.5);if(f.t>=f.dur)scene.remove(f.m)}
+  for(const f of S.fx){f.t+=dt;if(f.follow)f.m.position.copy(f.follow.pos).add(f.offset);f.mat.opacity=.85*(1-f.t/f.dur);if(f.blastRadius)f.m.scale.setScalar(1+(f.blastRadius-1)*Math.pow(Math.min(1,f.t/.22),.7));else f.m.scale.multiplyScalar(1+dt*1.5);if(f.t>=f.dur)scene.remove(f.m)}
   S.fx=S.fx.filter(f=>f.t<f.dur);
   for(const q of PARTS)if(q.l>0){q.l-=dt;q.v.y-=12*dt;q.m.position.addScaledVector(q.v,dt);q.m.scale.setScalar(Math.max(.01,q.l*2));if(q.l<=0)q.m.visible=false}
   let target;const a=S.f[S.me],b=opp(a);
@@ -1452,7 +1450,7 @@ function keysText0(){
   return '<b>1P</b> <kbd>WASD</kbd> 이동 (두 번 톡 또는 <kbd>R</kbd> · 대시, <kbd>V</kbd> 달리기) · <kbd>F</kbd> 주력을 담은 공격 · <kbd>H</kbd> 막기(꾹) · <kbd>T</kbd> <kbd>Y</kbd> <kbd>Q</kbd> 비술 · <kbd>E</kbd> 결계 · <kbd>Z</kbd> 반전술식 · <kbd>X</kbd> 간이 영역 · <kbd>C</kbd> 영역전연 · <kbd>B</kbd> 뇌 파괴<br>'+
     '<b>2P</b> <kbd>방향키</kbd> 이동 (두 번 톡 또는 <kbd>Enter</kbd> · 대시, <kbd>,</kbd> 달리기) · <kbd>.</kbd> 주력을 담은 공격 · <kbd>오른쪽 Shift</kbd> 막기(꾹) · <kbd>;</kbd> <kbd>\'</kbd> <kbd>[</kbd> 비술 · <kbd>]</kbd> 결계 · <kbd>\\</kbd> 반전술식 · <kbd>=</kbd> 간이 영역 · <kbd>-</kbd> 영역전연 · <kbd>`</kbd> 뇌 파괴 (숫자패드 1·4·5·7·6도 가능)<br>둘이서 대전은 키보드 하나를 함께 씁니다.';
 }
-const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 저절로 차지 않음, 내구도 80, 0이 되면 깨지고 10초 뒤 가득 찬 채로 다시 생김, 결계가 펼쳐져 있는 동안은 꺼짐':''}${c.six?' · <b>육안</b> 술식 주력 소모가 다른 술사의 55%, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}${c.venom?' · <b>맹독성 피</b> 공격을 맞히면 독이 쌓여(최대 3중첩) 4초 동안 체력이 계속 깎임':''}${c.noPoison?' · 독 면역':''}${c.mpMax?' · 주력 '+c.mpMax+'(타고나기를 2배)':''}${c.eff?' · 주력 효율 좋음(소모 '+Math.round(c.eff*100)+'%)':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (주력 50·20초)${c===CH.muha?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼를 누른 채 비술: 1 아오 최대 출력 · 2 아카 최대 출력 · 3 자폭 무라사키. 강화형은 주력을 더 소모하고 피해량이 증가하며 재사용 대기시간은 기본형과 공유. 자폭 무라사키는 머리 위에서 반경 12m로 폭발하며 적 피해 48, 본인 피해 12.<br><b>술식 합성</b> 남아 있는 아오에 같은 고죠의 아카를 맞히면 무라사키. 둘 다 최대 출력이면 머리 위에서 자폭 무라사키로 합성.':c===CH.yeom?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 비술: 1 연속 참격(주력 36·9연타·최대 피해 27) · 2 그물 참격(주력 40·피해 36). 강화형과 기본형은 재사용 대기시간을 공유.<br><b>팔 · 푸가</b> 기본 2번은 몸에 닿은 상대에게 6연타. 최대 체력·최대 주력에 따라 피해 증가. 같은 라운드에 해 계열(연속·차징 포함)과 접촉 팔을 모두 적중시키면 푸가가 개방되며 라운드가 끝날 때까지 유지. 빗나감·무하한·방어·간파는 해금에 포함되지 않음.<br><b>차징</b> 1번 비술을 1.4초 꾹 누른 뒤 놓으면 세계를 가르는 참격(주력 60·피해 54·10초). 짧게 놓으면 일반 참격, 아래 입력과 짧게 누르면 연속 참격. 방어·대시로 차징을 취소할 수 있음.':''}`;
+const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 저절로 차지 않음, 내구도 80, 0이 되면 깨지고 10초 뒤 가득 찬 채로 다시 생김, 결계가 펼쳐져 있는 동안은 꺼짐':''}${c.six?' · <b>육안</b> 술식 주력 소모가 다른 술사의 55%, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}${c.venom?' · <b>맹독성 피</b> 공격을 맞히면 독이 쌓여(최대 3중첩) 4초 동안 체력이 계속 깎임':''}${c.noPoison?' · 독 면역':''}${c.mpMax?' · 주력 '+c.mpMax+'(타고나기를 2배)':''}${c.eff?' · 주력 효율 좋음(소모 '+Math.round(c.eff*100)+'%)':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (주력 50·20초)${c===CH.muha?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼를 누른 채 비술: 1 아오 최대 출력 · 2 아카 최대 출력 · 3 자폭 무라사키. 강화형은 주력을 더 소모하고 피해량이 증가하며 재사용 대기시간은 기본형과 공유. 자폭 무라사키는 머리 위에서 반경 12m로 폭발하며 적 피해 48, 본인 피해 12.<br><b>술식 합성</b> 남아 있는 아오에 같은 고죠의 아카를 맞히면 무라사키. 둘 다 최대 출력이면 머리 위에서 자폭 무라사키로 합성.':c===CH.yeom?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 비술: 1 연속 참격(주력 36·9연타·최대 피해 27) · 2 그물 참격(주력 40·피해 36). 강화형과 기본형은 재사용 대기시간을 공유.<br><b>팔 · 푸가</b> 기본 2번은 6m 안의 한 상대를 지정해 몸에 참격 6연타. 지정 후에는 움직이는 대상의 몸을 따라 참격이 발생. 최대 체력·최대 주력에 따라 피해 증가. 같은 라운드에 해 계열(연속·차징 포함)과 팔을 모두 적중시키면 푸가가 개방되며 라운드가 끝날 때까지 유지. 빗나감·무하한·방어·간파는 해금에 포함되지 않음.<br><b>차징</b> 1번 비술을 1.4초 꾹 누른 뒤 놓으면 세계를 가르는 참격(주력 60·피해 54·10초). 짧게 놓으면 일반 참격, 아래 입력과 짧게 누르면 연속 참격. 방어·대시로 차징을 취소할 수 있음.':''}`;
 function remoteCh(){const o=NET.list.find(p=>!p.sameTab);return o?o.presence.ch:null}
 function renderSelect(){
   seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});seg('team',String(S.team|0),v=>{S.team=+v;renderSelect();pushLobby()});
@@ -1584,7 +1582,7 @@ function updateRemote(R,dt){
   if(R.flash>0){R.flash-=dt;if(R.flash<=0)setFlash(R,false)}
   if(R.state==='ko')R.koT+=dt;if(R.tg.visible)R.tg.scale.setScalar(1.2+Math.sin(S.t*30)*.3)}
 function handleEvt(R,e){const L=S.f[S.me];
-  if(e.k==='hit'&&e.o?.su===2&&R.id==='yeom'&&e.r===S.round){const T=S.f[e.to];if(T&&T.side!==R.side&&T.state!=='ko'){dismantleFx(T,.75);dismantleFx(T,.55)}}
+  if(e.k==='hit'&&e.o?.su===2&&R.id==='yeom'&&e.r===S.round){const T=S.f[e.to];if(T&&T.side!==R.side&&T.state!=='ko'){dismantleFx(T,.75,true);dismantleFx(T,.55,true)}}
   if(e.to!=null&&['hit','swap','parried','sukunaHit'].includes(e.k)&&e.to!==S.me)return; // 나를 노린 것만 내 기기에서 처리
   if(e.k==='hit'){if(e.r!=null&&e.r!==S.round)return;const o=e.o||{},su=R.id==='yeom'&&(o.su===1||o.su===2)?o.su:0;
     const r=applyHit(R,L,num(e.dmg,0,300),{domFx:!!o.df,bf:!!o.bf,unb:!!o.unb,big:!!o.big,proj:!!o.proj,stun:num(o.stun,0,2),kb:o.kb==null?undefined:num(o.kb,0,10),pull:Array.isArray(o.pull)?[num(o.pull[0],-A,A),num(o.pull[1],-A,A)]:null});
