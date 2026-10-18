@@ -481,10 +481,10 @@ const GOJO_MAX={
   s2:Object.assign({},CH.muha.s2,{name:'아카 최대 출력',desc:'대형 아카가 맞은 곳에서 폭발 · 피해 26',cost:40,maxOutput:true,windup:.6,ev:[[0,F=>shoot(F,{kind:'orb',spd:20,dmg:26,col:0xff4a5c,scale:3.2,radius:1.15,blast:3.6,heavy:1,stun:.7})]]}),
   s3:Object.assign({},CH.muha.s3,{name:'자폭 무라사키',desc:'머리 위에서 반경 12m 폭발 · 적 피해 48 · 본인 피해 12',cost:60,maxOutput:true,windup:1.1,ev:[[0,F=>purpleDetonation(F)]]})
 };
-const SLASH_RAIN={radius:5.2,damage:3,volleys:9,interval:.14,fallTime:.24};
+const SLASH_BARRAGE={damage:3,volleys:9,interval:.14,speed:28,range:24,spread:.13};
 const SUKUNA_MAX={
-  s1:Object.assign({},CH.yeom.s1,{name:'참격의 비',desc:'상대 위치에 무수한 참격이 쏟아짐 · 9연타, 최대 피해 27',cost:45,maxOutput:true,windup:.4,ev:[[0,F=>slashRain(F)]]}),
-  s2:Object.assign({},CH.yeom.s2,{name:'그물 참격',desc:'거대한 격자 참격이 전방을 관통 · 피해 36',cost:50,maxOutput:true,windup:.6,range:[2,16],ev:[[0,F=>shoot(F,{kind:'net',spd:24,dmg:36,col:0xff3a4a,l:1.35,width:4.1,pierce:1,heavy:1,stun:.55})]]})
+  s1:Object.assign({},CH.yeom.s1,{name:'연속 참격',desc:'몸 앞에서 무수한 참격을 연사 · 9연타, 최대 피해 27',cost:45,maxOutput:true,windup:.4,ev:[[0,F=>slashBarrage(F)]]}),
+  s2:Object.assign({},CH.yeom.s2,{name:'그물 참격',desc:'끝이 뻗은 井자 그물 참격이 전방을 관통 · 피해 36',cost:50,maxOutput:true,windup:.6,range:[2,16],ev:[[0,F=>shoot(F,{kind:'net',spd:24,dmg:36,col:0xff3a4a,l:1.35,width:4.1,pierce:1,heavy:1,stun:.55})]]})
 };
 const MAX_SKILLS={muha:GOJO_MAX,yeom:SUKUNA_MAX};
 const skillMove=(F,k,max=false)=>max&&MAX_SKILLS[F.id]?.[k]||F.def[k];
@@ -616,7 +616,7 @@ function humanInput(F){
 }
 
 // ================= state =================
-let S={team:0,roster:[],state:'select',mode:'cpu',diff:'normal',pick:['yuji','muha'],t:0,stop:0,shake:0,slow:0,intro:0,f:[],proj:[],tele:[],waves:[],fx:[],strikes:[],lines:[],blues:[],rains:[],shiki:[],doms:[],clash:null,wins:[0,0],round:1,gen:0,me:0,fp:['yuji','muha']};
+let S={team:0,roster:[],state:'select',mode:'cpu',diff:'normal',pick:['yuji','muha'],t:0,stop:0,shake:0,slow:0,intro:0,f:[],proj:[],tele:[],waves:[],fx:[],strikes:[],lines:[],blues:[],barrages:[],shiki:[],doms:[],clash:null,wins:[0,0],round:1,gen:0,me:0,fp:['yuji','muha']};
 try{const s=JSON.parse(localStorage.getItem('versus-setup')||'{}');if(s.mode&&s.mode!=='net')S.mode=s.mode;if(s.diff)S.diff=s.diff;if(Array.isArray(s.pick)&&s.pick.every(i=>CH[i]))S.pick=s.pick}catch(_){}
 let ACT=0,DOMTAG=false; // 결계 효과(시전 충격·반복 공격)가 만든 공격 표시
 // 팀전: side = 팀(0/1), slot = S.f 안의 번호. 같은 팀은 서로 맞지 않음
@@ -642,9 +642,9 @@ function makeFighter(side,id,human){
 function clearAll(){
   closeDomain();
   for(const F of S.f)if(F.sdm)F.sdm.visible=false;
-  for(const a of[S.proj,S.tele,S.waves,S.fx,S.strikes,S.blues,S.rains,S.shiki])for(const o of a)scene.remove(o.m);for(const a of[S.lines,S.proj])for(const l of a)if(l.line)scene.remove(l.line);
+  for(const a of[S.proj,S.tele,S.waves,S.fx,S.strikes,S.blues,S.barrages,S.shiki])for(const o of a)scene.remove(o.m);for(const a of[S.lines,S.proj])for(const l of a)if(l.line)scene.remove(l.line);
   for(const q of SLASHP)q.m.visible=false;
-  S.blues=[];S.rains=[];S.shiki=[];S.proj=[];S.tele=[];S.waves=[];S.fx=[];S.strikes=[];S.lines=[];
+  S.blues=[];S.barrages=[];S.shiki=[];S.proj=[];S.tele=[];S.waves=[];S.fx=[];S.strikes=[];S.lines=[];
 }
 function setupFighters(){
   clearAll();for(const F of S.f){scene.remove(F.m,F.sh,F.ring);if(F.sdm)scene.remove(F.sdm)}
@@ -820,8 +820,9 @@ const SLASH_NET_GEO=new THREE.PlaneGeometry(1,1);
 const SLASH_NET_CORE=basic(0xfff5ec,{side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
 const SLASH_NET_EDGE=basic(0xff3a4a,{transparent:true,opacity:.5,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
 function makeSlashNet(width){const g=new THREE.Group(),height=4.8;
+  // 바깥 교차점보다 선 끝을 더 뻗어 테두리가 닫히지 않는 井자 격자로 만듦.
   for(let i=0;i<=6;i++)for(const vertical of[false,true]){
-    const x=vertical?(i/6-.5)*width*2:0,y=vertical?0:(i/6-.5)*height;
+    const x=vertical?(i/6-.5)*width*2*.72:0,y=vertical?0:(i/6-.5)*height*.7;
     const edge=new THREE.Mesh(SLASH_NET_GEO,SLASH_NET_EDGE),core=new THREE.Mesh(SLASH_NET_GEO,SLASH_NET_CORE);
     edge.scale.set(vertical?.13:width*2,vertical?height:.13,1);core.scale.set(vertical?.035:width*2,vertical?height:.035,1);
     edge.position.set(x,y,0);core.position.set(x,y,.01);g.add(edge,core)}
@@ -852,25 +853,31 @@ function shoot(F,o){
   else if(o.kind==='net'){snd(190,.5,'sawtooth',.06,-140);snd(1100,.22,'triangle',.04,-750);S.shake=Math.max(S.shake,.25)}
   else snd(o.kind==='rock'?180:o.kind==='wave'?700:900,.1,'triangle',.04,-300);
 }
-function slashRain(F,c){c=(c||opp(F).pos).clone().setY(0);
-  if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'slashRain',a:{x:+c.x.toFixed(2),z:+c.z.toFixed(2)}});
-  F.face=Math.atan2(c.x-F.pos.x,c.z-F.pos.z);
-  const m=new THREE.Group(),r=SLASH_RAIN.radius;
-  const ring=new THREE.Mesh(new THREE.RingGeometry(r-.07,r,64),basic(0xff3a4a,{transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-PI/2;m.add(ring);
-  const fill=new THREE.Mesh(new THREE.CircleGeometry(r,48),basic(0xff3a4a,{transparent:true,opacity:.08,side:THREE.DoubleSide,depthWrite:false}));fill.rotation.x=-PI/2;fill.position.y=-.01;m.add(fill);
-  m.position.copy(c).setY(.04);scene.add(m);S.rains.push({m,ring,own:F,dom:DOMTAG,t:0,spawned:0,hits:0});snd(460,.35,'sawtooth',.04,-300);
+function slashBarrage(F,c,base){c=(c||F.pos).clone().setY(1.15);const O=opp(F);
+  base=Number.isFinite(base)?base:Math.atan2(O.pos.x-c.x,O.pos.z-c.z);F.face=base;
+  if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'slashBarrage',a:{x:+c.x.toFixed(2),z:+c.z.toFixed(2),base:+base.toFixed(3)}});
+  const m=new THREE.Mesh(new THREE.RingGeometry(.12,.2,16),basic(0xffe8dd,{transparent:true,opacity:.65,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+  m.position.copy(c).addScaledVector(fwd(base),F.def.r+.3);m.rotation.y=base;scene.add(m);
+  S.barrages.push({m,own:F,dom:DOMTAG,dir:fwd(base),base,t:0,spawned:0,waves:[]});snd(460,.35,'sawtooth',.04,-300);
 }
-function updateSlashRains(dt){const R=SLASH_RAIN;
-  for(const rain of S.rains){rain.t+=dt;const c=rain.m.position;
-    while(rain.spawned<R.volleys&&rain.t>=rain.spawned*R.interval){rain.spawned++;
-      for(let i=0;i<16;i++){const a=Math.random()*PI*2,r=Math.sqrt(Math.random())*R.radius;slashAt(c.x+Math.cos(a)*r,6.6+Math.random()*.8,c.z+Math.sin(a)*r,3.8+Math.random()*1.4,24)}
+function updateSlashBarrages(dt){const R=SLASH_BARRAGE;
+  for(const b of S.barrages){b.t+=dt;
+    if(b.spawned)b.m.position.copy(b.own.pos).setY(1.15).addScaledVector(b.dir,b.own.def.r+.3);
+    while(b.spawned<R.volleys&&b.t>=b.spawned*R.interval){const age=b.t-b.spawned*R.interval;b.spawned++;
+      const c=b.m.position.clone();b.waves.push({c,dist:0,step:Math.min(R.range,age*R.speed),hitSet:new Set()});
+      for(let i=0;i<16;i++){const side=(Math.random()-.5)*.6,a=b.base+(i/15-.5)*R.spread*2;
+        const q=slashAt(c.x+b.dir.z*side,.55+Math.random()*1.2,c.z-b.dir.x*side,.7+Math.random()*.8);
+        q.m.rotation.set(0,b.base,(Math.random()-.5)*PI);q.m.material.color.setHex(i%4?0xfff5ec:0xff3a4a);
+        q.v=fwd(a).multiplyScalar(R.speed);q.dur=R.range/R.speed;q.t=Math.min(age,q.dur);q.m.position.addScaledVector(q.v,q.t)}
       snd(800+Math.random()*500,.08,'sawtooth',.025,-600)}
-    while(rain.hits<R.volleys&&rain.t>=R.fallTime+rain.hits*R.interval){rain.hits++;
-      if(S.state==='fight')for(const T of foes(rain.own))if(Math.hypot(T.pos.x-c.x,T.pos.z-c.z)<R.radius+T.def.r)hit(rain.own,T,R.damage,{domFx:!!rain.dom,proj:true,stun:.1});
-      S.shake=Math.max(S.shake,.08)}
-    rain.ring.material.opacity=Math.max(0,.65+.2*Math.sin(rain.t*30))*(1-Math.min(1,rain.t/(R.fallTime+R.volleys*R.interval)));
-    if(rain.t>R.fallTime+R.volleys*R.interval+.15){rain.done=true;scene.remove(rain.m)}}
-  S.rains=S.rains.filter(r=>!r.done);
+    b.m.visible=b.spawned<R.volleys;b.m.material.opacity=.45+.25*Math.sin(b.t*60);
+    for(const w of b.waves){const before=w.dist;w.dist=Math.min(R.range,w.dist+(w.step??R.speed*dt));w.step=null;
+      if(S.state==='fight')for(const T of foes(b.own)){if(w.hitSet.has(T))continue;
+        const dx=T.pos.x-w.c.x,dz=T.pos.z-w.c.z,along=dx*b.dir.x+dz*b.dir.z;
+        if(along>=before-T.def.r-.3&&along<=w.dist+T.def.r+.3&&Math.abs(dx*b.dir.z-dz*b.dir.x)<.45+Math.max(0,along)*R.spread+T.def.r){w.hitSet.add(T);hit(b.own,T,R.damage,{domFx:!!b.dom,proj:true,stun:.1})}}}
+    b.waves=b.waves.filter(w=>w.dist<R.range);
+    if(b.spawned===R.volleys&&!b.waves.length){b.done=true;scene.remove(b.m)}}
+  S.barrages=S.barrages.filter(b=>!b.done);
 }
 function explodeProjectile(b){if(!b.blast||b.exploded)return;b.exploded=true;b.l=0;
   const c=b.m.position.clone(),r=b.blast,g=new THREE.Group();g.position.copy(c);
@@ -1062,10 +1069,9 @@ function domTal(F){const d=domOf(F),O=opp(F),p=d.orbs[d.idx++%12].position,dist=
 // 복마어주자 참격 이펙트: 미리 만든 판 200장을 돌려 씀
 const SLASHP=[];{const g=new THREE.PlaneGeometry(1,.045);for(let i=0;i<200;i++){const m=new THREE.Mesh(g,basic(0xff3a4a,{transparent:true,opacity:0,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));m.visible=false;scene.add(m);SLASHP.push({m,t:0,dur:0})}}
 let slashIdx=0;
-function slashAt(x,y,z,len,fall=0){const q=SLASHP[slashIdx++%SLASHP.length];q.m.position.set(x,y,z);
-  if(fall)q.m.rotation.set(0,Math.random()*PI,PI/2+(Math.random()-.5)*.3);else q.m.rotation.set(Math.random()*PI,Math.random()*PI,Math.random()*PI);
-  q.m.scale.set(len,1+Math.random(),1);q.m.material.color.setHex(Math.random()<.25?0xffffff:0xff3a4a);q.m.material.opacity=1;q.m.visible=true;q.t=0;q.vy=fall;q.dur=fall?.34:.12+Math.random()*.12}
-function updateSlashes(dt){for(const q of SLASHP){if(!q.m.visible)continue;q.t+=dt;q.m.position.y-=(q.vy||0)*dt;q.m.material.opacity=Math.max(0,1-q.t/q.dur);q.m.scale.x*=1+dt*4;if(q.t>=q.dur)q.m.visible=false}}
+function slashAt(x,y,z,len){const q=SLASHP[slashIdx++%SLASHP.length];q.m.position.set(x,y,z);q.m.rotation.set(Math.random()*PI,Math.random()*PI,Math.random()*PI);
+  q.m.scale.set(len,1+Math.random(),1);q.m.material.color.setHex(Math.random()<.25?0xffffff:0xff3a4a);q.m.material.opacity=1;q.m.visible=true;q.t=0;q.v=null;q.dur=.12+Math.random()*.12;return q}
+function updateSlashes(dt){for(const q of SLASHP){if(!q.m.visible)continue;q.t+=dt;if(q.v)q.m.position.addScaledVector(q.v,dt);q.m.material.opacity=Math.max(0,1-q.t/q.dur);q.m.scale.x*=1+dt*(q.v ? .5 : 4);if(q.t>=q.dur)q.m.visible=false}}
 function clashPower(F){return .5*F.hp/F.def.hp+.5*F.mp/MPX(F)}
 function updateDomain(dt){updateSlashes(dt);
   const C=S.clash;
@@ -1183,7 +1189,7 @@ function separate(){for(let i=0;i<S.f.length;i++)for(let j=i+1;j<S.f.length;j++)
 // ================= world update =================
 function updateWorld(dt){
   updateDomain(dt);
-  updateBlues(dt);updateShiki(dt);updateSlashRains(dt);
+  updateBlues(dt);updateShiki(dt);updateSlashBarrages(dt);
   for(const b of S.proj){if(b.l<=0)continue;const Tg=opp(b.own);
     if(b.homing){const want=Tg.pos.clone().setY(1.1).sub(b.m.position).setY(0).normalize().multiplyScalar(b.v.length());b.v.lerp(want,Math.min(1,b.homing*dt));b.homing=Math.max(0,b.homing-dt*.6)}
     let sp=1;if(!b.pierce)for(const T of foes(b.own))if(infOn(T)){const dx=b.m.position.x-T.pos.x,dz=b.m.position.z-T.pos.z,d=Math.hypot(dx,dz);
@@ -1304,7 +1310,7 @@ function keysText0(){
   return '<b>1P</b> <kbd>WASD</kbd> 이동 (두 번 톡 또는 <kbd>R</kbd> · 대시, <kbd>V</kbd> 달리기) · <kbd>F</kbd> 주력을 담은 공격 · <kbd>H</kbd> 막기(꾹) · <kbd>T</kbd> <kbd>Y</kbd> <kbd>Q</kbd> 비술 · <kbd>E</kbd> 결계 · <kbd>Z</kbd> 반전술식 · <kbd>X</kbd> 간이 영역 · <kbd>C</kbd> 영역전연 · <kbd>B</kbd> 뇌 파괴<br>'+
     '<b>2P</b> <kbd>방향키</kbd> 이동 (두 번 톡 또는 <kbd>Enter</kbd> · 대시, <kbd>,</kbd> 달리기) · <kbd>.</kbd> 주력을 담은 공격 · <kbd>오른쪽 Shift</kbd> 막기(꾹) · <kbd>;</kbd> <kbd>\'</kbd> <kbd>[</kbd> 비술 · <kbd>]</kbd> 결계 · <kbd>\\</kbd> 반전술식 · <kbd>=</kbd> 간이 영역 · <kbd>-</kbd> 영역전연 · <kbd>`</kbd> 뇌 파괴 (숫자패드 1·4·5·7·6도 가능)<br>둘이서 대전은 키보드 하나를 함께 씁니다.';
 }
-const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 저절로 차지 않음, 0이 되면 깨지고 6초 뒤 가득 찬 채로 다시 생김, 결계가 펼쳐져 있는 동안은 꺼짐':''}${c.six?' · <b>육안</b> 술식 주력 소모가 다른 술사의 55%, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}${c.venom?' · <b>맹독성 피</b> 공격을 맞히면 독이 쌓여(최대 3중첩) 4초 동안 체력이 계속 깎임':''}${c.noPoison?' · 독 면역':''}${c.mpMax?' · 주력 '+c.mpMax+'(타고나기를 2배)':''}${c.eff?' · 주력 효율 좋음(소모 '+Math.round(c.eff*100)+'%)':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (주력 50·20초)${c===CH.muha?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼를 누른 채 비술: 1 아오 최대 출력 · 2 아카 최대 출력 · 3 자폭 무라사키. 강화형은 주력을 더 소모하고 피해량이 증가하며 재사용 대기시간은 기본형과 공유. 자폭 무라사키는 머리 위에서 반경 12m로 폭발하며 적 피해 48, 본인 피해 12.':c===CH.yeom?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 비술: 1 참격의 비(주력 36·9연타·최대 피해 27) · 2 그물 참격(주력 40·피해 36). 강화형과 기본형은 재사용 대기시간을 공유.':''}`;
+const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 저절로 차지 않음, 0이 되면 깨지고 6초 뒤 가득 찬 채로 다시 생김, 결계가 펼쳐져 있는 동안은 꺼짐':''}${c.six?' · <b>육안</b> 술식 주력 소모가 다른 술사의 55%, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}${c.venom?' · <b>맹독성 피</b> 공격을 맞히면 독이 쌓여(최대 3중첩) 4초 동안 체력이 계속 깎임':''}${c.noPoison?' · 독 면역':''}${c.mpMax?' · 주력 '+c.mpMax+'(타고나기를 2배)':''}${c.eff?' · 주력 효율 좋음(소모 '+Math.round(c.eff*100)+'%)':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (주력 50·20초)${c===CH.muha?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼를 누른 채 비술: 1 아오 최대 출력 · 2 아카 최대 출력 · 3 자폭 무라사키. 강화형은 주력을 더 소모하고 피해량이 증가하며 재사용 대기시간은 기본형과 공유. 자폭 무라사키는 머리 위에서 반경 12m로 폭발하며 적 피해 48, 본인 피해 12.':c===CH.yeom?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 비술: 1 연속 참격(주력 36·9연타·최대 피해 27) · 2 그물 참격(주력 40·피해 36). 강화형과 기본형은 재사용 대기시간을 공유.':''}`;
 function remoteCh(){const o=NET.list.find(p=>!p.sameTab);return o?o.presence.ch:null}
 function renderSelect(){
   seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});seg('team',String(S.team|0),v=>{S.team=+v;renderSelect();pushLobby()});
@@ -1449,7 +1455,7 @@ function netFx(R,n,a){if(!a||typeof a!=='object')return;
   else if(n==='shiki'){if(['dog','nue','ele','rabbit'].includes(a.t))for(let i=0;i<(a.t==='rabbit'?18:1);i++)summon(R,a.t,num(a.x,-EDGE,EDGE),num(a.z,-EDGE,EDGE),{white:!!a.w,i})}
   else if(n==='beam')beam(R,num(a.l,1,40,30),0,num(a.a,-10,10));
   else if(n==='blue')blueOrb(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),R.id==='muha'&&!!a.max);
-  else if(n==='slashRain'&&R.id==='yeom')slashRain(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)));
+  else if(n==='slashBarrage'&&R.id==='yeom')slashBarrage(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.base,-10,10,R.face));
   else if(n==='purpleBurst'&&R.id==='muha')purpleDetonation(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),Array.isArray(a.targets)?a.targets.filter(i=>Number.isInteger(i)&&i>=0&&i<S.f.length).slice(0,MAXP):null);
   else if(n==='dom')openDomain(R)}
 function netEnd(msg){S.gen++;closeDomain();S.state='end';NET.ready=NET.match;
