@@ -451,6 +451,8 @@ const CH={
   s3:{name:'개 · 푸가',desc:'불화살을 쏘고 맞은 자리에서 폭발, 자신의 영역 안에서 쓰면 위력 120%',cost:45,cd:10,windup:.8,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>fuga(F)]]},
   dom:{name:'복마어주자',han:'伏魔御廚子',noBarrier:true,sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 반지름 200m로 펼쳐져 상대를 쉬지 않고 벰, 상대 결계가 펼쳐져 있어도 바깥에서 깨고 펼칠 수 있음'}},
 };
+const HP_MULT=3; // 판이 너무 빨리 끝나지 않게 모든 캐릭터 체력 3배
+for(const id in CH)CH[id].hp*=HP_MULT;
 const IDS=Object.keys(CH);
 for(const id of IDS){CH[id].s1.key='s1';CH[id].s2.key='s2';CH[id].s3.key='s3'}ULT.key='ult';RCT.key='rct';SD.key='sd';
 // 영역전연: 몸을 감싼 결계가 닿은 술식을 중화. 켜 둔 동안 근접 공격은 무하한을 뚫지만, 자기 술식은 못 씀
@@ -805,7 +807,7 @@ function sdDamage(T,dmg){if(!(T.sdT>0)||dmg<=0)return;T.sdHp-=dmg;
 
 function cleave(F){const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0),l=d.length();slashFx(F,3);
   for(let i=0;i<6;i++)setTimeout(()=>dismantleFx(O,.6),i*40);snd(1300,.25,'sawtooth',.04,-1100);
-  if(O.state!=='ko'&&l<3.6+O.def.r&&(l<.9||d.normalize().dot(fwd(F.face))>.2))hit(F,O,Math.round(8+O.def.hp*.06),{big:true,stun:.3})}
+  if(O.state!=='ko'&&l<3.6+O.def.r&&(l<.9||d.normalize().dot(fwd(F.face))>.2))hit(F,O,Math.round(8+O.def.hp/HP_MULT*.06),{big:true,stun:.3})}
 function dismantleFx(O,s=1){const c=O.pos.clone().setY(.6+Math.random()*1.3);const a=Math.random()*PI;
   const m=new THREE.Mesh(new THREE.PlaneGeometry(1.9*s,.05),basic(0xff3a4a,{transparent:true,opacity:.95,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
   m.position.copy(c);m.rotation.set(Math.random()*PI,Math.random()*PI,a);scene.add(m);S.fx.push({m,mat:m.material,t:0,dur:.18})}
