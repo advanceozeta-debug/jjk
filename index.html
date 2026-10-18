@@ -520,7 +520,7 @@ function hit(Aa,T,dmg,o={}){
   if(Aa&&Aa.otT>0)dmg*=1.4;
   if(S.mode==='net'){
     if(T.remote){if(!Aa||Aa.remote||S.state!=='fight'||T.state==='ko')return false;
-      sendEvt({k:'hit',dmg,o:{bf:o.bf?1:0,unb:o.unb?1:0,big:o.big?1:0,proj:o.proj?1:0,stun:o.stun||0,pull:o.pull||null}});Aa.mp=Math.min(100,Aa.mp+5);return 'sent'}
+      sendEvt({k:'hit',dmg,o:{bf:o.bf?1:0,unb:o.unb?1:0,big:o.big?1:0,proj:o.proj?1:0,stun:o.stun||0,pull:o.pull||null}});Aa.mp=Math.min(100,Aa.mp+2);return 'sent'}
     if(Aa&&Aa.remote)return false}
   return applyHit(Aa,T,dmg,o)}
 function applyHit(Aa,T,dmg,o={}){
@@ -536,11 +536,11 @@ function applyHit(Aa,T,dmg,o={}){
     const parry=T.human?(S.t-T.parryAt<.22):T.aiParry;
     if(parry){
       T.aiParry=false;
-      if(o.proj){T.mp=Math.min(100,T.mp+6);pop(T,'튕김','var(--spirit)');snd(1200,.12,'sine',.05,-300);return 'parry'}
+      if(o.proj){T.mp=Math.min(100,T.mp+4);pop(T,'튕김','var(--spirit)');snd(1200,.12,'sine',.05,-300);return 'parry'}
       if(Aa&&Aa.state!=='ko'){if(Aa.remote)sendEvt({k:'parried'});else{stun(Aa,1.2);Aa.mp=Math.max(0,Aa.mp-20)}}
-      T.mp=Math.min(100,T.mp+15);S.stop=.14;flash(.3);pop(T,'간파!','var(--paper)');snd(1400,.25,'sine',.06,-200);snd(700,.3,'triangle',.05,-100);
+      T.mp=Math.min(100,T.mp+10);S.stop=.14;flash(.3);pop(T,'간파!','var(--paper)');snd(1400,.25,'sine',.06,-200);snd(700,.3,'triangle',.05,-100);
       burst(T.pos.clone().setY(1.1).addScaledVector(fwd(T.face),.7),0xecd48a,18,7);return 'parry'}
-    dmg=Math.ceil(dmg*.2);T.mp=Math.min(100,T.mp+3);snd(500,.08,'square',.04,-200);burst(T.pos.clone().setY(1).addScaledVector(fwd(T.face),.7),0xe7e4da,6,4);
+    dmg=Math.ceil(dmg*.2);T.mp=Math.min(100,T.mp+1);snd(500,.08,'square',.04,-200);burst(T.pos.clone().setY(1).addScaledVector(fwd(T.face),.7),0xe7e4da,6,4);
     if(Aa){const kb=T.pos.clone().sub(Aa.pos).setY(0).normalize();T.kb.copy(kb).multiplyScalar(T.def.armor?1:3)}
     T.hp=Math.max(0,T.hp-dmg);sdDamage(T,dmg);if(T.hp<=0)ko(T);return 'block';
   }
@@ -550,7 +550,7 @@ function applyHit(Aa,T,dmg,o={}){
   const src=Aa?Aa.pos:T.pos.clone().add(new V3(0,0,1));const kb=T.pos.clone().sub(src).setY(0);if(kb.lengthSq()<.01)kb.set(0,0,1);
   T.kb.copy(kb.normalize()).multiplyScalar((T.def.armor?.25:1)*(o.big?10:4));
   T.flash=.1;setFlash(T,true);burst(T.pos.clone().setY(1.1),T.side?0xff8a7a:0x9fe6d6,10,6);S.shake=Math.max(S.shake,o.big?.3:.12);snd(o.big?200:320,.12,'square',.05,-150);
-  T.mp=Math.min(100,T.mp+4);if(Aa)Aa.mp=Math.min(100,Aa.mp+5);
+  T.mp=Math.min(100,T.mp+2);if(Aa)Aa.mp=Math.min(100,Aa.mp+2);
   T.hp=Math.max(0,T.hp-dmg);sdDamage(T,dmg);if(T.hp<=0)ko(T);else{if(o.pull)T.pull={to:new V3(+o.pull[0]||0,0,+o.pull[1]||0),t:.25};if(o.stun&&!holdAct)stun(T,o.stun)}return 'hit';
 }
 function ko(T){
@@ -609,7 +609,7 @@ function swingHit(F,step){slashFx(F,step);
 // 흑섬: 타격과 주력이 0.000001초 안에 겹칠 때 생기는 공간 왜곡. 위력은 2.5제곱.
 // 노린다고 나오는 게 아니라 확률로 터지고, 한 번 터지면 '존'에 들어가 한동안 더 잘 터짐.
 function bfChance(F,step){return Math.min(.45,(F.zoneT>0?.14+.06*F.zone:.04)+(step===3?.04:0)+(F.def.bf||0))}
-function blackFlash(F,O){F.zone=Math.min(4,F.zone+1);F.zoneT=6;F.mp=Math.min(100,F.mp+20);
+function blackFlash(F,O){F.zone=Math.min(4,F.zone+1);F.zoneT=6;F.mp=Math.min(100,F.mp+10);
   pop(F,F.zone>1?`흑섬 ×${F.zone}`:'흑섬!','#ff3a4a');S.stop=Math.max(S.stop,.2);flash(.35);S.shake=Math.max(S.shake,.5);
   snd(55,.5,'sawtooth',.09,-20);snd(2400,.25,'square',.03,-2200);
   const c=O.pos.clone().setY(1.1);burst(c,0x000000,22,10);burst(c,0xff1a3a,18,9);
@@ -825,7 +825,7 @@ function updateFighter(F,I,dt){
   F.rcting=!!I.rct&&F.mp>1&&F.hp<F.def.hp;
   if(F.rcting){F.mp=Math.max(0,F.mp-RCT.cost*(F.def.six?.75:1)*dt);F.hp=Math.min(F.def.hp,F.hp+F.def.hp*RCT.rate*dt);
     if(Math.random()<.35)burst(F.pos.clone().setY(.4+Math.random()*1.5),0xb8ffd8,1,2);if(!F.rcSnd||S.t-F.rcSnd>.5){F.rcSnd=S.t;snd(660,.4,'sine',.025,220)}}
-  else F.mp=Math.min(100,F.mp+(S.dom?0:8*(F.def.six?1.25:1))*dt);
+  else F.mp=Math.min(100,F.mp+(S.dom?0:4*(F.def.six?1.25:1))*dt);
   F.inv=Math.max(0,F.inv-dt);F.stag=Math.max(0,F.stag-dt);F.dashCd-=dt;for(const k in F.cd)F.cd[k]-=dt;if(F.counterT>0){F.counterT-=dt;if(F.counterT<=0)F.tg.visible=false}F.emp=Math.max(0,F.emp-dt);
   if(F.flash>0){F.flash-=dt;if(F.flash<=0)setFlash(F,false)}
   if(F.zoneT>0){F.zoneT-=dt;if(F.zoneT<=0)F.zone=0}
