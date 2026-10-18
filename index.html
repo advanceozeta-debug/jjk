@@ -423,7 +423,7 @@ const CH={
   s1:{name:'해',desc:'보이지 않을 만큼 빠른 참격을 날림',cost:20,cd:2.5,windup:.12,active:.1,recover:.2,range:[2,13],ev:[[0,F=>shoot(F,{kind:'wave',spd:28,dmg:9,col:0xff3a4a,l:.7})]]},
   s2:{name:'팔',desc:'가까운 상대를 난도질, 상대 체력이 클수록 더 아픔',cost:30,cd:5,windup:.3,active:.25,recover:.35,red:true,range:[0,3.6],ev:[[0,F=>cleave(F)],[.12,F=>slashFx(F,2)]]},
   s3:{name:'개 · 푸가',desc:'불화살을 쏘고 맞은 자리에서 폭발, 자신의 영역 안에서 쓰면 위력 120%',cost:45,cd:10,windup:.8,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>fuga(F)]]},
-  dom:{name:'복마어주자',han:'伏魔御廚子',noBarrier:true,sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 펼쳐져 상대를 쉬지 않고 벰, 상대 결계가 펼쳐져 있어도 바깥에서 깨고 펼칠 수 있음'}},
+  dom:{name:'복마어주자',han:'伏魔御廚子',noBarrier:true,sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 반지름 200m로 펼쳐져 상대를 쉬지 않고 벰, 상대 결계가 펼쳐져 있어도 바깥에서 깨고 펼칠 수 있음'}},
 };
 const IDS=Object.keys(CH);
 for(const id of IDS){CH[id].s1.key='s1';CH[id].s2.key='s2';CH[id].s3.key='s3'}ULT.key='ult';RCT.key='rct';SD.key='sd';
@@ -845,14 +845,15 @@ function openDomain(F){
   if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'dom',a:{}});
   const broke=S.dom&&S.dom.owner!==F&&F.def.dom.noBarrier?S.dom.owner:null;closeDomain();const D=F.def.dom,O=opp(F),g=new THREE.Group();
   const dome=new THREE.Mesh(new THREE.SphereGeometry(56,32,16),new THREE.MeshBasicMaterial({map:domTex(F.id),side:THREE.BackSide,transparent:true,opacity:0,fog:false,depthWrite:false}));
-  const floor=new THREE.Mesh(new THREE.CircleGeometry(40,72),basic(0x0e0b16,{transparent:true,opacity:0,depthWrite:false}));floor.rotation.x=-PI/2;floor.position.y=.02;
-  const rings=[];for(const r of[12,24,36]){const m=new THREE.Mesh(new THREE.RingGeometry(r-.06,r,72),basic(D.acc,{transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-PI/2;m.position.y=.03;g.add(m);rings.push(m)}
+  const R=D.noBarrier?200:40; // 복마어주자는 결계가 없어 반지름 200m까지 퍼짐 (경기장 78m보다 훨씬 넓음)
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(R,96),basic(D.noBarrier?0x1a0408:0x0e0b16,{transparent:true,opacity:0,depthWrite:false}));floor.rotation.x=-PI/2;floor.position.y=.02;
+  const rings=[];for(const r of D.noBarrier?[12,24,36,70,110,150,200]:[12,24,36]){const m=new THREE.Mesh(new THREE.RingGeometry(r-(r>40?.6:.06),r,r>40?160:72),basic(D.acc,{transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-PI/2;m.position.y=.03;g.add(m);rings.push(m)}
   const moon=glow(F.id==='jang'?0xff9a5a:0xfff4d0,10);moon.material.fog=false;moon.material.opacity=0;moon.position.set(0,28,-48);moon.scale.setScalar(26);
   const orbs=[];for(let i=0;i<12;i++){const m=F.id==='haram'?new THREE.Mesh(TAL_GEO,TAL_MAT):glow(D.acc,1.4);if(F.id==='haram')m.scale.setScalar(1.6);g.add(m);orbs.push(m)}
   if(D.noBarrier){dome.visible=false;moon.visible=false} // 결계 없이 펼쳐지는 영역: 돔이 없음
   g.add(dome,floor,moon);scene.add(g);
   S.dom={owner:F,g,dome,floor,rings,moon,orbs,t:0,dur:7,fire:.6,idx:0};
-  scene.fog.color.setHex(D.noBarrier?0x1a0606:0x0a0814);if(broke){banner('결계 파괴',`${F.def.name} · ${D.name}(${D.han}) · ${broke.def.name}의 ${broke.def.dom.name} 붕괴`,2);burst(new V3(0,6,0),D.acc,60,16);S.shake=.7}else banner('결계 현현',`${F.def.name} · ${D.name}(${D.han})`);snd(110,1.6,'sine',.07,-50);snd(330,1.2,'triangle',.04,110);flash(.5);S.shake=.4;
+  scene.fog.color.setHex(D.noBarrier?0x1a0606:0x0a0814);if(D.noBarrier){scene.fog.near=40;scene.fog.far=320}if(broke){banner('결계 파괴',`${F.def.name} · ${D.name}(${D.han}) · ${broke.def.name}의 ${broke.def.dom.name} 붕괴`,2);burst(new V3(0,6,0),D.acc,60,16);S.shake=.7}else banner('결계 현현',`${F.def.name} · ${D.name}(${D.han})`);snd(110,1.6,'sine',.07,-50);snd(330,1.2,'triangle',.04,110);flash(.5);S.shake=.4;
   if(Math.hypot(O.pos.x-F.pos.x,O.pos.z-F.pos.z)<8+O.def.r)hit(F,O,15,{unb:true,big:true,stun:1.0,domFx:true})
 }
 function domTal(F){const d=S.dom,O=opp(F),p=d.orbs[d.idx++%12].position,dist=Math.max(1,Math.hypot(O.pos.x-p.x,O.pos.z-p.z));
@@ -863,7 +864,7 @@ function updateDomain(dt){const d=S.dom;if(!d)return;d.t+=dt;
   d.orbs.forEach((m,i)=>{const an=i/12*PI*2+d.t*.4;m.position.set(Math.cos(an)*9,3+Math.sin(d.t*2+i)*.4,Math.sin(an)*9);if(m.isMesh)m.lookAt(0,3,0)});
   d.fire-=dt;if(d.t>.6&&d.t<d.dur-.5&&d.fire<=0&&opp(d.owner).state!=='ko'&&!d.owner.remote){d.fire=d.owner.def.dom.every;DOMTAG=true;try{d.owner.def.dom.tick(d.owner)}finally{DOMTAG=false}}
   if(d.t>=d.dur)closeDomain()}
-function closeDomain(){if(!S.dom)return;scene.remove(S.dom.g);S.dom=null;scene.fog.color.setHex(0x0d0f1c)}
+function closeDomain(){if(!S.dom)return;scene.remove(S.dom.g);S.dom=null;scene.fog.color.setHex(0x0d0f1c);scene.fog.near=65;scene.fog.far=190}
 
 // ================= AI =================
 function aiInput(F,dt){
