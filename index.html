@@ -493,7 +493,7 @@ const CH={
   tal:{name:'둔기 투척',cost:10,cd:.9,fire:F=>shoot(F,{kind:'rock',spd:15,dmg:5})},
   s1:{name:'와해',desc:'상대 주변 바닥을 무너뜨림',cost:30,cd:5,windup:.25,active:.1,recover:.35,red:true,range:[0,13],ev:[[0,F=>{const O=opp(F);for(let i=0;i<3;i++)tele(F,i?around(O.pos,2):O.pos.clone(),1.7,.6+i*.15,9,0xe6c84a,.5)}]]},
   s2:{name:'칠삼 일격',desc:'선 위의 약점을 겨눠 들이받는 일격 · 흑섬 가능',cost:25,cd:4,windup:.35,active:.35,recover:.4,range:[3,10],start:F=>lunge(F,18),contact:15},
-  s3:{name:'시간 외 노동',desc:'6초 동안 모든 공격 위력 1.4배',cost:30,cd:15,windup:.2,active:.1,recover:.2,start:F=>{F.otT=6;pop(F,'시간 외 노동','#e6c84a');burst(F.pos.clone().setY(1.2),0xe6c84a,22,6);snd(180,.5,'sawtooth',.05,-60)},range:[0,99]},
+  s3:{name:'시간 외 노동',desc:'6초 동안 모든 공격 위력 1.4배 · 근접 물리 공격 흑섬 확률 +10%p',cost:30,cd:15,bfBonus:.1,windup:.2,active:.1,recover:.2,start:F=>{F.otT=6;pop(F,'시간 외 노동','#e6c84a');burst(F.pos.clone().setY(1.2),0xe6c84a,22,6);snd(180,.5,'sawtooth',.05,-60)},range:[0,99]},
   dom:{name:'칠삼 결계',han:'七三結界',sky:['#0a0904','#262010','#4a3a18'],acc:0xe6c84a,every:.9,tick:F=>tele(F,opp(F).pos.clone(),1.6,.55,9,0xe6c84a,.4),desc:'선 그어진 약점마다 일격이 떨어짐'}},
  choso:{name:'쵸소',title:'피를 다루는 주술사',hp:105,venom:true,spd:6.2,r:.5,build:makeChoso,keep:7,
   atk:{range:2.4,dmg:[4,4,7],wu:.07,col:0xd8203a},
@@ -891,7 +891,7 @@ function zoneRct(F){return F.zoneT>0?1.4+.15*F.zone:1}               // 반전�
 // 같은 팀의 유지·토도에게 각각 +7%p. 팀 구성 보너스라 중복 편성과 동료 KO로 변하지 않음.
 function bfTeamBonus(F){const partner=F.id==='yuji'?'todo':F.id==='todo'?'yuji':'';
   return partner&&S.f.some(T=>T.side===F.side&&T.id===partner)?.07:0}
-function bfChance(F,step){return Math.min(.45,(F.zoneT>0?.14+.06*F.zone:.04)+(step===3?.04:0)+(F.def.bf||0)+bfTeamBonus(F))}
+function bfChance(F,step){return Math.min(.45,(F.zoneT>0?.14+.06*F.zone:.04)+(step===3?.04:0)+(F.def.bf||0)+bfTeamBonus(F)+(F.otT>0?(F.def.s3.bfBonus||0):0))}
 function meleeHit(F,T,dmg,o={},step=1){const bf=dmg>0&&!o.proj&&!o.domFx&&!DOMTAG&&Math.random()<bfChance(F,step);
   return hit(F,T,dmg*(bf?2.5:1),Object.assign({},o,{bf,big:!!o.big||bf,stun:bf?Math.max(.35,o.stun||0):o.stun||0}))}
 function blackFlash(F,O){F.zone=Math.min(4,F.zone+1);if(F.rctOut<1){F.rctOut=Math.min(1,F.rctOut+RCT.bf);setTimeout(()=>pop(F,'반전 출력 '+Math.round(F.rctOut*100)+'%','#b8ffd8'),450)}F.zoneT=6;F.mp=Math.min(MPX(F),F.mp+10);
