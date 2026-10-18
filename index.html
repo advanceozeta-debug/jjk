@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>야간 퇴마부 대전</title>
+<title>주술 회전</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@800&family=Gothic+A1:wght@500;700;900&display=swap">
@@ -148,9 +148,9 @@ body.touch .tc{display:block}
 <body>
 <div id="app">
   <div id="hud">
-    <div class="side"><div class="nm"><span class="tagp" id="tag0">1P</span><span id="n0">하람</span><small id="t0">영력 0</small></div><div class="bar"><i id="hp0"></i></div><div class="bar g" id="gb0"><i id="mp0"></i></div><div class="rd" id="rd0"><b></b><b></b></div></div>
+    <div class="side"><div class="nm"><span class="tagp" id="tag0">1P</span><span id="n0">하람</span><small id="t0">주력 0</small></div><div class="bar"><i id="hp0"></i></div><div class="bar g" id="gb0"><i id="mp0"></i></div><div class="rd" id="rd0"><b></b><b></b></div></div>
     <div class="vs">對<small id="rlab">1라운드</small></div>
-    <div class="side r"><div class="nm"><small id="t1">영력 0</small><span id="n1">백랑</span><span class="tagp" id="tag1">CPU</span></div><div class="bar"><i id="hp1"></i></div><div class="bar g" id="gb1"><i id="mp1"></i></div><div class="rd" id="rd1"><b></b><b></b></div></div>
+    <div class="side r"><div class="nm"><small id="t1">주력 0</small><span id="n1">백랑</span><span class="tagp" id="tag1">CPU</span></div><div class="bar"><i id="hp1"></i></div><div class="bar g" id="gb1"><i id="mp1"></i></div><div class="rd" id="rd1"><b></b><b></b></div></div>
   </div>
   <div id="stage">
     <canvas id="cv"></canvas>
@@ -161,11 +161,11 @@ body.touch .tc{display:block}
     <div class="tc" id="tc">
       <div class="lpad"><div class="joy idle" id="joy"><i id="knob"></i></div>
         <button class="btn qs qf" data-k="qf" aria-label="앞으로 대시">▲</button><button class="btn qs qb" data-k="qb" aria-label="뒤로 대시">▼</button><button class="btn qs ql" data-k="ql" aria-label="왼쪽으로 대시">◀</button><button class="btn qs qr" data-k="qr" aria-label="오른쪽으로 대시">▶</button></div>
-      <button class="btn fire" data-k="atk" id="bAtk">베기</button>
-      <button class="btn ult" data-k="ult" id="bUlt">결계</button>
-      <button class="btn sk sk1" data-k="s1" id="bS1">비술1</button>
-      <button class="btn sk sk2" data-k="s2" id="bS2">비술2</button>
-      <button class="btn sk sk3" data-k="s3" id="bS3">비술3</button>
+      <button class="btn fire" data-k="atk" id="bAtk">주력을 담은 공격</button>
+      <button class="btn ult" data-k="ult" id="bUlt">영역 전개</button>
+      <button class="btn sk sk1" data-k="s1" id="bS1">술식 1</button>
+      <button class="btn sk sk2" data-k="s2" id="bS2">술식 2</button>
+      <button class="btn sk sk3" data-k="s3" id="bS3">술식 3</button>
     </div>
     <div class="over" id="select"><div class="wrap">
       <div class="tag">자정의 옥상 · 3판 2선승</div>
@@ -305,9 +305,9 @@ function makeJang(){const [g,b]=grp();
 function regMats(g){const mats=[];g.traverse(o=>{if(o.isMesh&&o.material.emissive&&!mats.includes(o.material)){o.material.userData.base=o.material.emissive.getHex();mats.push(o.material)}});g.userData.mats=mats}
 
 // ================= characters =================
-const ULT={kind:'ult',name:'결계 현현',cost:50,cd:20,windup:.45,active:.1,recover:.3,red:true,ev:[[0,F=>openDomain(F)]]};
+const ULT={kind:'ult',name:'영역 전개',cost:50,cd:20,windup:.45,active:.1,recover:.3,red:true,ev:[[0,F=>openDomain(F)]]};
 const CH={
- haram:{name:'하람',title:'신참 퇴마사',hp:110,spd:6.2,r:.5,build:makeHaram,keep:2.6,
+ haram:{name:'하람',title:'신참 주술사',hp:110,spd:6.2,r:.5,build:makeHaram,keep:2.6,
   atk:{range:2.4,dmg:[4,4,8],wu:.07,col:0xecd48a},
   tal:{name:'부적',cost:8,cd:.65,fire:F=>shoot(F,{kind:'tal',spd:17,dmg:3})},
   s1:{name:'뇌인',desc:'상대 발밑에 벼락',cost:30,cd:4,windup:.15,active:.1,recover:.25,red:true,range:[0,14],ev:[[0,F=>strike(F,opp(F).pos,1.8,12)]]},
