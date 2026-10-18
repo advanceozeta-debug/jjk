@@ -436,7 +436,7 @@ function humanInput(F){
     const buf=map[b].some(c=>now-(KP[c]||0)<BUF)||(touch&&now-(TBP[b]||0)<BUF)||(mouse&&now-(MBP[b]||0)<BUF);
     if((cur&&(!F.prev[b]||b==='atk'))||buf)I.press[b]=true;F.prev[b]=cur;
     // 실제로 발동할 수 있는 순간까지 기억해 뒀다가 쓰고 지움
-    if(buf&&can&&(F.state==='free'||b==='atk'||b==='rct'||b==='sd')){for(const c of map[b])delete KP[c];if(touch)delete TBP[b];if(mouse)delete MBP[b]}}
+    if(buf&&(b==='rct'||b==='sd'?F.state!=='ko':can&&(F.state==='free'||b==='atk'))){for(const c of map[b])delete KP[c];if(touch)delete TBP[b];if(mouse)delete MBP[b]}}
   const DV={up:camF,down:camF.clone().negate(),left:camR.clone().negate(),right:camR},QS={qf:'up',qb:'down',ql:'left',qr:'right'};
   for(const d in DV)if(map[d].some(c=>dashTap[c])){for(const c of map[d])delete dashTap[c];I.press.dash=true;I.move.copy(DV[d])}
   if(touch)for(const q in QS){const cur=!!TB[q],buf=now-(TBP[q]||0)<BUF;if((cur&&!F.prev[q])||buf){I.press.dash=true;I.move.copy(DV[QS[q]]);delete TBP[q]}F.prev[q]=cur}
@@ -525,13 +525,14 @@ function applyHit(Aa,T,dmg,o={}){
     if(Aa){const kb=T.pos.clone().sub(Aa.pos).setY(0).normalize();T.kb.copy(kb).multiplyScalar(T.def.armor?1:3)}
     T.hp=Math.max(0,T.hp-dmg);if(T.hp<=0)ko(T);return 'block';
   }
-  const flinch=!T.def.armor||o.big;
+  const holdAct=T.state==='act'&&T.act&&(T.act.mv===RCT||T.act.mv===SD);
+  const flinch=(!T.def.armor||o.big)&&!holdAct;
   if(flinch){if(T.state==='act'){T.act=null;T.state='free';T.tg.visible=false;T.lv=null;T.queued=false}T.stag=o.big?.45:.28;T.guard=false}
   const src=Aa?Aa.pos:T.pos.clone().add(new V3(0,0,1));const kb=T.pos.clone().sub(src).setY(0);if(kb.lengthSq()<.01)kb.set(0,0,1);
   T.kb.copy(kb.normalize()).multiplyScalar((T.def.armor?.25:1)*(o.big?10:4));
   T.flash=.1;setFlash(T,true);burst(T.pos.clone().setY(1.1),T.side?0xff8a7a:0x9fe6d6,10,6);S.shake=Math.max(S.shake,o.big?.3:.12);snd(o.big?200:320,.12,'square',.05,-150);
   T.mp=Math.min(100,T.mp+4);if(Aa)Aa.mp=Math.min(100,Aa.mp+5);
-  T.hp=Math.max(0,T.hp-dmg);if(T.hp<=0)ko(T);else{if(o.pull)T.pull={to:new V3(+o.pull[0]||0,0,+o.pull[1]||0),t:.25};if(o.stun)stun(T,o.stun)}return 'hit';
+  T.hp=Math.max(0,T.hp-dmg);if(T.hp<=0)ko(T);else{if(o.pull)T.pull={to:new V3(+o.pull[0]||0,0,+o.pull[1]||0),t:.25};if(o.stun&&!holdAct)stun(T,o.stun)}return 'hit';
 }
 function ko(T){
   if(S.state!=='fight')return;T.state='ko';T.koT=0;T.act=null;T.tg.visible=false;T.lv=null;S.state='ko';S.slow=1.3;closeDomain();
@@ -558,8 +559,8 @@ function startAct(F,mv){F.state='act';F.guard=false;F.act={mv,phase:'windup',t:m
   if(mv.windup>=.15)snd(mv.red?160:520,.16,mv.red?'sawtooth':'sine',.03,mv.red?-40:200)}
 function doAtk(F){if(S.t-F.lastEnd>.45)F.combo=0;F.combo=F.combo%3+1;startAct(F,atkMove(F,F.combo))}
 function tryAct(F,k){
-  if(k==='rct'||k==='sd'){const mv=MV(F,k);if(F.state!=='free'&&F.state!=='act')return;if(F.act&&F.act.mv===mv)return;if(k==='rct'&&F.hp>=F.def.hp)return;if(!spend(F,mv.cost))return;
-    if(F.state==='act'){F.act=null;F.state='free';F.tg.visible=false;F.lv=null;F.queued=false}startAct(F,mv);return}
+  if(k==='rct'||k==='sd'){const mv=MV(F,k);if(F.state==='ko')return;if(F.act&&F.act.mv===mv)return;if(k==='rct'&&F.hp>=F.def.hp)return;if(!spend(F,mv.cost))return;
+    if(F.state==='act'||F.state==='stun'){F.act=null;F.state='free';F.t=0;F.tg.visible=false;F.lv=null;F.queued=false}F.stag=0;startAct(F,mv);return}
   if(k==='atk'){if(F.state==='free')doAtk(F);else if(F.state==='act'&&F.act.mv.kind==='atk')F.queued=true;return}
   if(F.state!=='free')return;
   if(k==='tal'){const t=F.def.tal;if(F.cd.tal>0||!spend(F,t.cost))return;F.cd.tal=t.cd;t.fire(F);return}
@@ -746,6 +747,7 @@ function updateFighter(F,I,dt){
   if(F.pull){F.pos.lerp(F.pull.to,Math.min(1,dt*14));F.pull.t-=dt;if(F.pull.t<=0)F.pull=null}
   F.pos.addScaledVector(F.kb,dt);F.kb.multiplyScalar(Math.pow(.01,dt));
   const O=opp(F),toO=O.pos.clone().sub(F.pos).setY(0);
+  if(F.state==='stun')for(const k of['rct','sd'])if(I.press[k])tryAct(F,k);
   if(F.state==='stun'){F.t-=dt;F.guard=false;if(F.t<=0)F.state='free';clampV(F.pos,A);return}
   if(I.guardTap){if(S.t-F.guardAt>.45)F.parryAt=S.t;F.guardAt=S.t}
   F.guard=I.guard&&F.state==='free'&&F.dashT<=0&&F.stag<=0;if(!F.guard)F.aiParry=false;
@@ -756,7 +758,7 @@ function updateFighter(F,I,dt){
   if(F.dashT>0){F.dashT-=dt;F.pos.addScaledVector(F.dashDir,14*dt);if(Math.random()<.5)burst(F.pos.clone().setY(.8),F.side?0x5a2a2a:0x2b3566,1,1)}
   else if(F.state==='free'&&ml>.1)F.pos.addScaledVector(I.move,F.def.spd*(F.guard?.35:F.stag>0?.25:1)*(F.sdT>0?.4:1)*dt);
   if(F.dashT<=0&&!F.lv&&toO.lengthSq()>.01)F.face=Math.atan2(toO.x,toO.z);
-  if(F.stag<=0&&F.dashT<=0)for(const k of['atk','tal','s1','s2','s3','ult','rct','sd'])if(I.press[k])tryAct(F,k);
+  for(const k of['atk','tal','s1','s2','s3','ult','rct','sd'])if(I.press[k]&&(k==='rct'||k==='sd'||F.stag<=0&&F.dashT<=0))tryAct(F,k);
   if(F.state==='act')progressAct(F,dt);
   clampV(F.pos,A);
 }
@@ -879,7 +881,7 @@ function keysText(){
   return '<b>1P</b> <kbd>WASD</kbd> 이동 (두 번 톡 · 대시) · <kbd>F</kbd> 주력을 담은 공격 · <kbd>T</kbd> <kbd>Y</kbd> <kbd>Q</kbd> 비술 · <kbd>E</kbd> 결계 · <kbd>Z</kbd> 반전술식 · <kbd>X</kbd> 간이 영역<br>'+
     '<b>2P</b> <kbd>방향키</kbd> 이동 (두 번 톡 · 대시) · <kbd>.</kbd> 주력을 담은 공격 · <kbd>;</kbd> <kbd>\'</kbd> <kbd>[</kbd> 비술 · <kbd>]</kbd> 결계 · <kbd>\\</kbd> 반전술식 · <kbd>=</kbd> 간이 영역 (숫자패드 1·4·5·7·6도 가능)<br>둘이서 대전은 키보드 하나를 함께 씁니다.';
 }
-const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 영력이 남아 있으면 일반 공격과 투사체가 닿지 않음':''}${c.six?' · <b>육안</b> 영력 소모 25% 감소, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (영력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (영력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (영력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (영력 50·20초)<br><span style="color:var(--dim)">공통 · <b>흑섬</b> 주력을 담은 공격이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · <b>반전술식</b> 영력만 있으면 언제든, 1.2초 동안 체력 24% 회복, 맞으면 끊김 · <b>간이 영역</b> 영력만 있으면 언제든, 4초 동안 상대 결계의 확정타를 막고 들어오는 상대를 자동으로 벰, 대신 느려짐</span>`;
+const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 영력이 남아 있으면 일반 공격과 투사체가 닿지 않음':''}${c.six?' · <b>육안</b> 영력 소모 25% 감소, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (영력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (영력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (영력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (영력 50·20초)<br><span style="color:var(--dim)">공통 · <b>흑섬</b> 주력을 담은 공격이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · <b>반전술식</b> 영력만 있으면 언제든(맞는 중·기절 중에도), 1.2초 동안 체력 24% 회복, 맞아도 끊기지 않음 · <b>간이 영역</b> 영력만 있으면 언제든(맞는 중·기절 중에도), 4초 동안 상대 결계의 확정타를 막고 들어오는 상대를 자동으로 벰, 대신 느려짐</span>`;
 function remoteCh(){const o=NET.remote;return o&&CH[o.presence.ch]?o.presence.ch:null}
 function renderSelect(){
   seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});
