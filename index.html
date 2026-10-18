@@ -233,13 +233,13 @@ body.touch .tc{display:block}
 (()=>{
 const $=id=>document.getElementById(id);
 const stage=$('stage'),cv=$('cv');
-const V3=THREE.Vector3,PI=Math.PI,A=37.3,EDGE=40;
+const V3=THREE.Vector3,PI=Math.PI,HALF=200,A=HALF-.7,EDGE=HALF+3,FOGN=90,FOGF=340,SPD=1.4; // 1 = 1m
 
 // ================= renderer & world =================
 const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
 renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x0d0f1c);scene.fog=new THREE.Fog(0x0d0f1c,65,190);
-const cam=new THREE.PerspectiveCamera(55,1,.1,300);let camK=1;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x0d0f1c);scene.fog=new THREE.Fog(0x0d0f1c,90,340);
+const cam=new THREE.PerspectiveCamera(55,1,.1,1200);let camK=1;
 function resize(){const r=stage.getBoundingClientRect();if(!r.width)return;renderer.setSize(r.width,r.height,false);cam.aspect=r.width/r.height;cam.updateProjectionMatrix();camK=r.width<r.height?1.3:1}
 new ResizeObserver(resize).observe(stage);
 scene.add(new THREE.HemisphereLight(0x8a9ad0,0x14121e,.8));
@@ -251,30 +251,29 @@ const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=64;co
   g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c)})();
 const glow=(c,s)=>{const m=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,color:c,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));m.scale.setScalar(s);return m};
 (function world(){
-  const ar=new THREE.Group();ar.scale.set(3,1,3);scene.add(ar); // 경기장 3배 (78×78)
-  const floor=new THREE.Mesh(new THREE.PlaneGeometry(26,26),lam(0x2a2e42));floor.rotation.x=-PI/2;ar.add(floor);
-  const lineM=basic(0x343a56);
-  for(let i=-12;i<=12;i+=3){const a=new THREE.Mesh(new THREE.PlaneGeometry(.05,26),lineM);a.rotation.x=-PI/2;a.position.set(i,.01,0);ar.add(a);
-    const b=new THREE.Mesh(new THREE.PlaneGeometry(26,.05),lineM);b.rotation.x=-PI/2;b.position.set(0,.01,i);ar.add(b)}
-  const ring=new THREE.Mesh(new THREE.RingGeometry(5.8,5.95,64),basic(0x4a3a2a));ring.rotation.x=-PI/2;ring.position.y=.015;ar.add(ring);
-  const wallM=lam(0x23273a),postM=lam(0x3a4060);
-  for(const [x,z,w,d] of[[0,-13,26.4,.4],[0,13,26.4,.4],[-13,0,.4,26.4],[13,0,.4,26.4]]){const m=new THREE.Mesh(new THREE.BoxGeometry(w,.7,d),wallM);m.position.set(x,.35,z);ar.add(m)}
-  for(let i=-12;i<=12;i+=1.5)for(const [x,z] of[[i,-13],[i,13],[-13,i],[13,i]]){const p=new THREE.Mesh(new THREE.BoxGeometry(.06,1,.06),postM);p.position.set(x,1.2,z);ar.add(p)}
-  for(const [x,z,w,d] of[[0,-13,26,.06],[0,13,26,.06],[-13,0,.06,26],[13,0,.06,26]]){const r=new THREE.Mesh(new THREE.BoxGeometry(w,.06,d),postM);r.position.set(x,1.7,z);ar.add(r)}
-  const tank=new THREE.Mesh(new THREE.CylinderGeometry(1.4,1.4,2.6,16),lam(0x3b4466));tank.position.set(-10.5,2.4,-10.5);ar.add(tank);
-  for(const [dx,dz] of[[-.9,-.9],[.9,-.9],[-.9,.9],[.9,.9]]){const l=new THREE.Mesh(new THREE.BoxGeometry(.12,1.1,.12),postM);l.position.set(-10.5+dx,.55,-10.5+dz);ar.add(l)}
-  const stair=new THREE.Mesh(new THREE.BoxGeometry(3.6,3,3),lam(0x262a40));stair.position.set(10.6,1.5,-10.8);ar.add(stair);
-  const door=new THREE.Mesh(new THREE.PlaneGeometry(1.1,2),basic(0x11131f));door.position.set(10.6,1,-9.29);ar.add(door);
-  const ex=new THREE.Mesh(new THREE.PlaneGeometry(.7,.25),basic(0x2fbf7f));ex.position.set(10.6,2.3,-9.28);ar.add(ex);
-  const eg=glow(0x2fbf7f,2.2);eg.position.set(10.6,2.3,-9.1);ar.add(eg);
+  const H=HALF; // 경기장 반 너비 200m → 400m × 400m 옥상
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(H*2,H*2),lam(0x2a2e42));floor.rotation.x=-PI/2;scene.add(floor);
+  const lineM=basic(0x343a56),lv=new THREE.PlaneGeometry(.08,H*2),lh=new THREE.PlaneGeometry(H*2,.08);
+  for(let i=-H+10;i<H;i+=10){const a=new THREE.Mesh(lv,lineM);a.rotation.x=-PI/2;a.position.set(i,.01,0);scene.add(a);const b=new THREE.Mesh(lh,lineM);b.rotation.x=-PI/2;b.position.set(0,.01,i);scene.add(b)}
+  for(const r of[20,60]){const ring=new THREE.Mesh(new THREE.RingGeometry(r-.25,r,128),basic(0x4a3a2a));ring.rotation.x=-PI/2;ring.position.y=.015;scene.add(ring)}
+  const wallM=lam(0x23273a),postM=lam(0x3a4060),postG=new THREE.BoxGeometry(.08,1,.08);
+  for(const [x,z,w,d] of[[0,-H,H*2+.4,.4],[0,H,H*2+.4,.4],[-H,0,.4,H*2+.4],[H,0,.4,H*2+.4]]){const m=new THREE.Mesh(new THREE.BoxGeometry(w,.7,d),wallM);m.position.set(x,.35,z);scene.add(m);
+    const r=new THREE.Mesh(new THREE.BoxGeometry(w>1?w:.08,.08,d>1?d:.08),postM);r.position.set(x,1.7,z);scene.add(r)}
+  for(let i=-H;i<=H;i+=5)for(const [x,z] of[[i,-H],[i,H],[-H,i],[H,i]]){const p=new THREE.Mesh(postG,postM);p.position.set(x,1.2,z);scene.add(p)}
+  // 옥상 구조물: 물탱크, 계단실, 실외기 (부딪히지 않는 배경)
+  const tankG=new THREE.CylinderGeometry(2.4,2.4,4.4,18),tankM=lam(0x3b4466),boxM=lam(0x262a40),acM=lam(0x4a4e60);
+  for(const [x,z] of[[-160,-160],[150,170],[-170,120],[60,-175],[175,-60]]){const t=new THREE.Mesh(tankG,tankM);t.position.set(x,4,z);scene.add(t)}
+  for(const [x,z,w,d] of[[160,-165,8,7],[-60,170,10,6],[-178,-20,6,12]]){const st=new THREE.Mesh(new THREE.BoxGeometry(w,5,d),boxM);st.position.set(x,2.5,z);scene.add(st);
+    const ex=new THREE.Mesh(new THREE.PlaneGeometry(1,.35),basic(0x2fbf7f));ex.position.set(x,4,z+d/2+.02);scene.add(ex);const eg=glow(0x2fbf7f,3);eg.position.set(x,4,z+d/2+.3);scene.add(eg)}
+  for(let i=0;i<14;i++){const a=Math.random()*PI*2,d=95+Math.random()*90,u=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.6,1.4),acM);u.position.set(Math.cos(a)*d,.8,Math.sin(a)*d);u.rotation.y=a;scene.add(u)}
   const wc=document.createElement('canvas');wc.width=64;wc.height=128;const g=wc.getContext('2d');g.fillStyle='#151829';g.fillRect(0,0,64,128);
   for(let y=4;y<128;y+=10)for(let x=4;x<64;x+=10){g.fillStyle=Math.random()<.18?'#c9b56a':Math.random()<.1?'#4f7f8f':'#1e2236';g.fillRect(x,y,6,6)}
   const wt=new THREE.CanvasTexture(wc);wt.wrapS=wt.wrapT=THREE.RepeatWrapping;
-  for(let i=0;i<40;i++){const a=i/40*PI*2+Math.random()*.1,d=68+Math.random()*44,h=8+Math.random()*26,w=5+Math.random()*7;
+  for(let i=0;i<70;i++){const a=i/70*PI*2+Math.random()*.06,d=H+40+Math.random()*120,h=25+Math.random()*80,w=14+Math.random()*22;
     const t=wt.clone();t.needsUpdate=true;t.repeat.set(w/6,h/12);
-    const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),basic(0xffffff,{map:t}));b.position.set(Math.cos(a)*d,h/2-10,Math.sin(a)*d);b.rotation.y=Math.random();scene.add(b)}
-  const moon=new THREE.Mesh(new THREE.SphereGeometry(5,16,12),basic(0xe7e4da,{fog:false}));moon.position.set(-50,40,-110);scene.add(moon);
-  const mg=glow(0x9fb4ff,34);mg.material.fog=false;mg.position.copy(moon.position);scene.add(mg);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),basic(0xffffff,{map:t}));b.position.set(Math.cos(a)*d,h/2-20,Math.sin(a)*d);b.rotation.y=Math.random();scene.add(b)}
+  const moon=new THREE.Mesh(new THREE.SphereGeometry(16,16,12),basic(0xe7e4da,{fog:false}));moon.position.set(-200,170,-480);scene.add(moon);
+  const mg=glow(0x9fb4ff,110);mg.material.fog=false;mg.position.copy(moon.position);scene.add(mg);
 })();
 
 // ================= fx =================
@@ -581,7 +580,7 @@ function intro(){S.state='intro';S.intro=1.8;S.slow=0;banner(`${S.round}라운�
 // ================= combat core =================
 function spend(F,n){if(F.def.six)n=Math.ceil(n*.75);if(F.zoneT>0)n=Math.ceil(n*zoneEff(F));if(F.mp>=n){F.mp-=n;return true}if(F.human)pop(F,'주력 부족','var(--dim)');return false}
 function setFlash(F,on){for(const m of F.m.userData.mats)m.emissive.setHex(on?0xffffff:m.userData.base)}
-function infOn(T){return !!T.def.inf&&T.infG>0&&!(T.infBrk>0)&&T.state!=='stun'&&T.state!=='ko'&&!(S.dom&&S.dom.owner!==T&&!(T.sdT>0))}
+function infOn(T){return !!T.def.inf&&T.infG>0&&!(T.infBrk>0)&&T.state!=='stun'&&T.state!=='ko'&&!S.dom} // 결계를 펼치거나 결계 안에 갇히면 무하한이 꺼짐
 // 무하한 게이지: 막을 때마다 깎이고, 0이 되면 4초 동안 무하한이 깨짐
 function infHit(T,amt){T.infG=Math.max(0,T.infG-amt*(T.def.six?.8:1)*zoneEff(T));T.infLast=S.t;
   if(T.infG<=0&&!(T.infBrk>0)){T.infBrk=4;pop(T,'무하한 붕괴','#ff8a7a');burst(T.pos.clone().setY(1.1),0x9fd0ff,30,9);flash(.2);S.shake=Math.max(S.shake,.3);snd(240,.5,'square',.05,-180)}}
@@ -844,16 +843,16 @@ function domTex(id){if(DOMTEX[id])return DOMTEX[id];const sky=CH[id].dom.sky,c=d
 function openDomain(F){
   if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'dom',a:{}});
   const broke=S.dom&&S.dom.owner!==F&&F.def.dom.noBarrier?S.dom.owner:null;closeDomain();const D=F.def.dom,O=opp(F),g=new THREE.Group();
-  const dome=new THREE.Mesh(new THREE.SphereGeometry(56,32,16),new THREE.MeshBasicMaterial({map:domTex(F.id),side:THREE.BackSide,transparent:true,opacity:0,fog:false,depthWrite:false}));
-  const R=D.noBarrier?200:40; // 복마어주자는 결계가 없어 반지름 200m까지 퍼짐 (경기장 78m보다 훨씬 넓음)
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(80,32,16),new THREE.MeshBasicMaterial({map:domTex(F.id),side:THREE.BackSide,transparent:true,opacity:0,fog:false,depthWrite:false}));
+  const R=D.noBarrier?200:60; // 복마어주자는 결계가 없어 반지름 200m까지 퍼짐 (경기장 78m보다 훨씬 넓음)
   const floor=new THREE.Mesh(new THREE.CircleGeometry(R,96),basic(D.noBarrier?0x1a0408:0x0e0b16,{transparent:true,opacity:0,depthWrite:false}));floor.rotation.x=-PI/2;floor.position.y=.02;
-  const rings=[];for(const r of D.noBarrier?[12,24,36,70,110,150,200]:[12,24,36]){const m=new THREE.Mesh(new THREE.RingGeometry(r-(r>40?.6:.06),r,r>40?160:72),basic(D.acc,{transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-PI/2;m.position.y=.03;g.add(m);rings.push(m)}
-  const moon=glow(F.id==='jang'?0xff9a5a:0xfff4d0,10);moon.material.fog=false;moon.material.opacity=0;moon.position.set(0,28,-48);moon.scale.setScalar(26);
+  const rings=[];for(const r of D.noBarrier?[12,24,36,70,110,150,200]:[15,35,60]){const m=new THREE.Mesh(new THREE.RingGeometry(r-(r>40?.6:.1),r,r>40?160:96),basic(D.acc,{transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-PI/2;m.position.y=.03;g.add(m);rings.push(m)}
+  const moon=glow(F.id==='jang'?0xff9a5a:0xfff4d0,10);moon.material.fog=false;moon.material.opacity=0;moon.position.set(0,40,-70);moon.scale.setScalar(36);
   const orbs=[];for(let i=0;i<12;i++){const m=F.id==='haram'?new THREE.Mesh(TAL_GEO,TAL_MAT):glow(D.acc,1.4);if(F.id==='haram')m.scale.setScalar(1.6);g.add(m);orbs.push(m)}
   if(D.noBarrier){dome.visible=false;moon.visible=false} // 결계 없이 펼쳐지는 영역: 돔이 없음
-  g.add(dome,floor,moon);scene.add(g);
+  g.add(dome,floor,moon);g.position.set(F.pos.x,0,F.pos.z);scene.add(g);
   S.dom={owner:F,g,dome,floor,rings,moon,orbs,t:0,dur:7,fire:.6,idx:0};
-  scene.fog.color.setHex(D.noBarrier?0x1a0606:0x0a0814);if(D.noBarrier){scene.fog.near=40;scene.fog.far=320}if(broke){banner('결계 파괴',`${F.def.name} · ${D.name}(${D.han}) · ${broke.def.name}의 ${broke.def.dom.name} 붕괴`,2);burst(new V3(0,6,0),D.acc,60,16);S.shake=.7}else banner('결계 현현',`${F.def.name} · ${D.name}(${D.han})`);snd(110,1.6,'sine',.07,-50);snd(330,1.2,'triangle',.04,110);flash(.5);S.shake=.4;
+  scene.fog.color.setHex(D.noBarrier?0x1a0606:0x0a0814);if(D.noBarrier){scene.fog.near=60;scene.fog.far=480}if(broke){banner('결계 파괴',`${F.def.name} · ${D.name}(${D.han}) · ${broke.def.name}의 ${broke.def.dom.name} 붕괴`,2);burst(new V3(0,6,0),D.acc,60,16);S.shake=.7}else banner('결계 현현',`${F.def.name} · ${D.name}(${D.han})`);snd(110,1.6,'sine',.07,-50);snd(330,1.2,'triangle',.04,110);flash(.5);S.shake=.4;
   if(Math.hypot(O.pos.x-F.pos.x,O.pos.z-F.pos.z)<8+O.def.r)hit(F,O,15,{unb:true,big:true,stun:1.0,domFx:true})
 }
 function domTal(F){const d=S.dom,O=opp(F),p=d.orbs[d.idx++%12].position,dist=Math.max(1,Math.hypot(O.pos.x-p.x,O.pos.z-p.z));
@@ -864,7 +863,7 @@ function updateDomain(dt){const d=S.dom;if(!d)return;d.t+=dt;
   d.orbs.forEach((m,i)=>{const an=i/12*PI*2+d.t*.4;m.position.set(Math.cos(an)*9,3+Math.sin(d.t*2+i)*.4,Math.sin(an)*9);if(m.isMesh)m.lookAt(0,3,0)});
   d.fire-=dt;if(d.t>.6&&d.t<d.dur-.5&&d.fire<=0&&opp(d.owner).state!=='ko'&&!d.owner.remote){d.fire=d.owner.def.dom.every;DOMTAG=true;try{d.owner.def.dom.tick(d.owner)}finally{DOMTAG=false}}
   if(d.t>=d.dur)closeDomain()}
-function closeDomain(){if(!S.dom)return;scene.remove(S.dom.g);S.dom=null;scene.fog.color.setHex(0x0d0f1c);scene.fog.near=65;scene.fog.far=190}
+function closeDomain(){if(!S.dom)return;scene.remove(S.dom.g);S.dom=null;scene.fog.color.setHex(0x0d0f1c);scene.fog.near=FOGN;scene.fog.far=FOGF}
 
 // ================= AI =================
 function aiInput(F,dt){
@@ -927,10 +926,10 @@ function updateFighter(F,I,dt){
   const ml=I.move.length();
   if(I.press.dash&&F.dashCd<=0&&F.stag<=0&&(F.state==='free'||(F.state==='act'&&F.act.mv.kind==='atk'&&F.act.phase==='recover'))){
     F.state='free';F.act=null;F.tg.visible=false;F.queued=false;F.guard=false;
-    F.dashDir.copy(ml>.15?I.move.clone().normalize():toO.clone().normalize().negate());F.dashT=.24;F.dashCd=.55;F.inv=.32;snd(300,.12,'sine',.035,400)}
-  if(F.dashT>0){F.dashT-=dt;F.pos.addScaledVector(F.dashDir,14*dt);if(Math.random()<.5)burst(F.pos.clone().setY(.8),F.side?0x5a2a2a:0x2b3566,1,1)}
+    F.dashDir.copy(ml>.15?I.move.clone().normalize():toO.clone().normalize().negate());F.dashT=.26;F.dashCd=.55;F.inv=.32;snd(300,.12,'sine',.035,400)}
+  if(F.dashT>0){F.dashT-=dt;F.pos.addScaledVector(F.dashDir,24*dt);if(Math.random()<.5)burst(F.pos.clone().setY(.8),F.side?0x5a2a2a:0x2b3566,1,1)}
   else if(F.state==='free'&&ml>.1){F.running=!!I.run&&!F.guard&&F.stag<=0&&!F.rcting&&!(F.sdT>0);
-    F.pos.addScaledVector(I.move,F.def.spd*(F.guard?.35:F.stag>0?.25:1)*(F.sdT>0?.4:1)*(F.rcting?.5:1)*(F.running?1.7:1)*dt);
+    F.pos.addScaledVector(I.move,F.def.spd*SPD*(F.guard?.35:F.stag>0?.25:1)*(F.sdT>0?.4:1)*(F.rcting?.5:1)*(F.running?2:1)*dt);
     if(F.running&&Math.random()<.35)burst(F.pos.clone().setY(.15),0x8a8676,1,2)}
   else F.running=false;
   if(F.dashT<=0&&!F.lv&&toO.lengthSq()>.01)F.face=Math.atan2(toO.x,toO.z);
@@ -1061,7 +1060,7 @@ function keysText0(){
   return '<b>1P</b> <kbd>WASD</kbd> 이동 (두 번 톡 또는 <kbd>R</kbd> · 대시, <kbd>V</kbd> 달리기) · <kbd>F</kbd> 주력을 담은 공격 · <kbd>H</kbd> 막기(꾹) · <kbd>T</kbd> <kbd>Y</kbd> <kbd>Q</kbd> 비술 · <kbd>E</kbd> 결계 · <kbd>Z</kbd> 반전술식 · <kbd>X</kbd> 간이 영역 · <kbd>C</kbd> 영역전연<br>'+
     '<b>2P</b> <kbd>방향키</kbd> 이동 (두 번 톡 또는 <kbd>Enter</kbd> · 대시, <kbd>,</kbd> 달리기) · <kbd>.</kbd> 주력을 담은 공격 · <kbd>오른쪽 Shift</kbd> 막기(꾹) · <kbd>;</kbd> <kbd>\'</kbd> <kbd>[</kbd> 비술 · <kbd>]</kbd> 결계 · <kbd>\\</kbd> 반전술식 · <kbd>=</kbd> 간이 영역 · <kbd>-</kbd> 영역전연 (숫자패드 1·4·5·7·6도 가능)<br>둘이서 대전은 키보드 하나를 함께 씁니다.';
 }
-const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 0이 되면 4초 동안 깨짐':''}${c.six?' · <b>육안</b> 주력 소모 25% 감소, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (주력 50·20초)`;
+const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 0이 되면 4초 동안 깨짐, 결계가 펼쳐져 있는 동안은 꺼짐':''}${c.six?' · <b>육안</b> 주력 소모 25% 감소, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (주력 50·20초)`;
 function remoteCh(){const o=NET.remote;return o&&CH[o.presence.ch]?o.presence.ch:null}
 function renderSelect(){
   seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});
@@ -1159,7 +1158,7 @@ function handleEvt(R,e){const L=S.f[S.me];
 function netFx(R,n,a){if(!a||typeof a!=='object')return;
   if(n==='shoot'){if(!['tal','orb','wave','chain','rock','purple'].includes(a.kind))return;
     const o={kind:a.kind,n:num(a.n,1,5,1)|0,spread:num(a.spread,0,1),spd:num(a.spd,1,40,12),dmg:0,col:num(a.col,0,0xffffff,0x9fe6d6)|0,l:num(a.l,.1,4,2.5),homing:num(a.homing,0,4),base:num(a.base,-10,10),big:a.big?1:0,pierce:a.pierce?1:0};
-    if(Array.isArray(a.sp))o.sp=[num(a.sp[0],-60,60),num(a.sp[1],0,10,1),num(a.sp[2],-60,60)];if(a.vy!=null)o.vy=num(a.vy,-20,20);shoot(R,o)}
+    if(Array.isArray(a.sp))o.sp=[num(a.sp[0],-EDGE-10,EDGE+10),num(a.sp[1],0,10,1),num(a.sp[2],-EDGE-10,EDGE+10)];if(a.vy!=null)o.vy=num(a.vy,-20,20);shoot(R,o)}
   else if(n==='strike')strike(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.r,.5,4,1.8),0);
   else if(n==='tele')tele(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.r,.5,4,2),num(a.dur,.2,3,1),0,num(a.col,0,0xffffff,0x8a4dff)|0);
   else if(n==='wave')wave(R,num(a.spd,1,20,8),num(a.max,1,20,12),0,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)));
