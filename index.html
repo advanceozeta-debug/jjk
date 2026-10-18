@@ -332,8 +332,8 @@ function regMats(g){const mats=[];g.traverse(o=>{if(o.isMesh&&o.material.emissiv
 
 // ================= characters =================
 // 공통 술식: 모든 캐릭터가 사용
-const RCT={kind:'rct',name:'반전술식',cost:35,cd:12,windup:.3,active:1.2,recover:.2,heal:.24,start:F=>{burst(F.pos.clone().setY(1),0xb8ffd8,14,4);snd(660,.6,'sine',.04,330)}};
-const SD={kind:'sd',name:'간이 영역',cost:20,cd:10,windup:.12,active:.05,recover:.1,dur:4,start:F=>openSD(F)};
+const RCT={kind:'rct',name:'반전술식',cost:35,cd:0,windup:.3,active:1.2,recover:.2,heal:.24,start:F=>{burst(F.pos.clone().setY(1),0xb8ffd8,14,4);snd(660,.6,'sine',.04,330)}};
+const SD={kind:'sd',name:'간이 영역',cost:20,cd:0,windup:.12,active:.05,recover:.1,dur:4,start:F=>openSD(F)};
 const ULT={kind:'ult',name:'영역 전개',cost:50,cd:20,windup:.45,active:.1,recover:.3,red:true,ev:[[0,F=>openDomain(F)]]};
 const CH={
  haram:{name:'하람',title:'신참 주술사',hp:110,spd:6.2,r:.5,build:makeHaram,keep:2.6,
@@ -473,7 +473,7 @@ function setupFighters(){
   const tags=S.mode==='net'?(S.me?['상대','나']:['나','상대']):S.mode==='2p'?['1P','2P']:['1P','CPU'];$('tag0').textContent=tags[0];$('tag1').textContent=tags[1];
   const d=S.f[S.me].def;
   {const keys=S.mode==='2p'?(S.me||0)===0?{s1:'T',s2:'Y',s3:'Q',ult:'E',rct:'Z',sd:'X'}:{}:{s1:'Z',s2:'X',s3:'V',ult:'F',rct:'R',sd:'G'};
-   $('skbar').innerHTML=['s1','s2','s3','ult','rct','sd'].map(k=>{const mv=MV(S.f[S.me],k);return `<div class="skc${k==='ult'?' u':k==='rct'||k==='sd'?' c':''}" id="sk-${k}"><kbd>${keys[k]||''}</kbd><b>${k==='ult'?d.dom.name:mv.name}</b><span>영력 ${cost(S.f[S.me],mv)} · ${mv.cd}초</span></div>`}).join('')}$('bS1').textContent=d.s1.name;$('bS2').textContent=d.s2.name;$('bS3').textContent=d.s3.name;
+   $('skbar').innerHTML=['s1','s2','s3','ult','rct','sd'].map(k=>{const mv=MV(S.f[S.me],k);return `<div class="skc${k==='ult'?' u':k==='rct'||k==='sd'?' c':''}" id="sk-${k}"><kbd>${keys[k]||''}</kbd><b>${k==='ult'?d.dom.name:mv.name}</b><span>영력 ${cost(S.f[S.me],mv)} · ${mv.cd?mv.cd+'초':'쿨타임 없음'}</span></div>`}).join('')}$('bS1').textContent=d.s1.name;$('bS2').textContent=d.s2.name;$('bS3').textContent=d.s3.name;
 }
 function resetRound(){
   clearAll();
@@ -553,12 +553,13 @@ function startAct(F,mv){F.state='act';F.guard=false;F.act={mv,phase:'windup',t:m
   if(mv.windup>=.15)snd(mv.red?160:520,.16,mv.red?'sawtooth':'sine',.03,mv.red?-40:200)}
 function doAtk(F){if(S.t-F.lastEnd>.45)F.combo=0;F.combo=F.combo%3+1;startAct(F,atkMove(F,F.combo))}
 function tryAct(F,k){
+  if(k==='rct'||k==='sd'){const mv=MV(F,k);if(F.state!=='free'&&F.state!=='act')return;if(F.act&&F.act.mv===mv)return;if(k==='rct'&&F.hp>=F.def.hp)return;if(!spend(F,mv.cost))return;
+    if(F.state==='act'){F.act=null;F.state='free';F.tg.visible=false;F.lv=null;F.queued=false}startAct(F,mv);return}
   if(k==='atk'){if(F.state==='free')doAtk(F);else if(F.state==='act'&&F.act.mv.kind==='atk')F.queued=true;return}
   if(F.state!=='free')return;
   if(k==='tal'){const t=F.def.tal;if(F.cd.tal>0||!spend(F,t.cost))return;F.cd.tal=t.cd;t.fire(F);return}
   if(k==='s1'||k==='s2'||k==='s3'){const mv=F.def[k];if(F.cd[k]>0||!spend(F,mv.cost))return;F.cd[k]=mv.cd;startAct(F,mv);return}
   if(k==='ult'){if(S.dom||F.cd.ult>0||!spend(F,ULT.cost))return;F.cd.ult=ULT.cd;startAct(F,ULT)}
-  if(k==='rct'||k==='sd'){const mv=MV(F,k);if(F.cd[k]>0||(k==='rct'&&F.hp>=F.def.hp)||!spend(F,mv.cost))return;F.cd[k]=mv.cd;startAct(F,mv)}
 }
 function endAct(F){const mv=F.act.mv;F.state='free';F.act=null;if(mv.kind==='atk'){F.lastEnd=S.t;if(F.queued){F.queued=false;doAtk(F)}}}
 function runEv(F){const a=F.act,ev=a.mv.ev;if(!ev)return;while(F.act===a&&a.ev<ev.length&&a.el>=ev[a.ev][0]){const fn=ev[a.ev][1];a.ev++;fn(F)}}
@@ -717,8 +718,8 @@ function aiInput(F,dt){
   if(ai.next<=0&&!I.guard&&F.state==='free'){ai.next=D.think*(.6+Math.random()*.8);
     const c=[];if(l<F.def.atk.range+O.def.r+.2)c.push(['atk',3]);
     if(F.cd.ult<=0&&F.mp>=ULT.cost&&!S.dom&&l<5.5)c.push(['ult',5]);
-    if(F.cd.sd<=0&&F.mp>=SD.cost&&S.dom&&S.dom.owner!==F&&!(F.sdT>0))c.push(['sd',9]);
-    if(F.cd.rct<=0&&F.mp>=RCT.cost&&F.hp<F.def.hp*.45&&l>4.5)c.push(['rct',4]);
+    if(F.mp>=SD.cost&&S.dom&&S.dom.owner!==F&&!(F.sdT>0))c.push(['sd',9]);
+    if(F.mp>=RCT.cost+15&&F.hp<F.def.hp*.45&&l>4.5)c.push(['rct',4]);
     for(const k of['s1','s2','s3']){const s=F.def[k];if(F.cd[k]<=0&&F.mp>=s.cost+(F.mp>80?0:10)&&l>=s.range[0]&&l<=s.range[1])c.push([k,2])}
     if(c.length&&Math.random()<D.aggr){let r=Math.random()*c.reduce((s,x)=>s+x[1],0);for(const x of c){r-=x[1];if(r<=0){I.press[x[0]]=true;break}}}}
   if(F.state==='act'&&F.act.mv.kind==='atk'&&F.combo<3&&Math.random()<D.aggr*dt*12)I.press.atk=true;
@@ -873,7 +874,7 @@ function keysText(){
   return '<b>1P</b> <kbd>WASD</kbd> 이동 (두 번 톡 · 대시) · <kbd>F</kbd> 주력을 담은 공격 · <kbd>T</kbd> <kbd>Y</kbd> <kbd>Q</kbd> 비술 · <kbd>E</kbd> 결계 · <kbd>Z</kbd> 반전술식 · <kbd>X</kbd> 간이 영역<br>'+
     '<b>2P</b> <kbd>방향키</kbd> 이동 (두 번 톡 · 대시) · <kbd>.</kbd> 주력을 담은 공격 · <kbd>;</kbd> <kbd>\'</kbd> <kbd>[</kbd> 비술 · <kbd>]</kbd> 결계 · <kbd>\\</kbd> 반전술식 · <kbd>=</kbd> 간이 영역 (숫자패드 1·4·5·7·6도 가능)<br>둘이서 대전은 키보드 하나를 함께 씁니다.';
 }
-const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 영력이 남아 있으면 일반 공격과 투사체가 닿지 않음':''}${c.six?' · <b>육안</b> 영력 소모 25% 감소, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (영력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (영력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (영력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (영력 50·20초)<br><span style="color:var(--dim)">공통 · <b>흑섬</b> 주력을 담은 공격이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · <b>반전술식</b> 1.2초 동안 체력 24% 회복, 맞으면 끊김 · <b>간이 영역</b> 4초 동안 상대 결계의 확정타를 막고 들어오는 상대를 자동으로 벰, 대신 느려짐</span>`;
+const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 영력이 남아 있으면 일반 공격과 투사체가 닿지 않음':''}${c.six?' · <b>육안</b> 영력 소모 25% 감소, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (영력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (영력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (영력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (영력 50·20초)<br><span style="color:var(--dim)">공통 · <b>흑섬</b> 주력을 담은 공격이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · <b>반전술식</b> 영력만 있으면 언제든, 1.2초 동안 체력 24% 회복, 맞으면 끊김 · <b>간이 영역</b> 영력만 있으면 언제든, 4초 동안 상대 결계의 확정타를 막고 들어오는 상대를 자동으로 벰, 대신 느려짐</span>`;
 function remoteCh(){const o=NET.remote;return o&&CH[o.presence.ch]?o.presence.ch:null}
 function renderSelect(){
   seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});
