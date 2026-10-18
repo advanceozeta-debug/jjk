@@ -523,7 +523,11 @@ function humanInput(F){
   // 가드는 누르고 있는 동안만. 누른 순간 0.22초 안에 맞으면 간파
   const gCur=!!(map.guard.some(c=>key[c])||(touch&&TB.guard));
   I.guard=gCur;I.guardTap=gCur&&!F.prev.guard;F.prev.guard=gCur;
-  I.run=!!((map.run||[]).some(c=>key[c])||(touch&&TB.run));return I;
+  // 달리기: 한 번 누르면 이동 입력(조이스틱·이동 키)을 놓을 때까지 계속 달림
+  const rCur=!!((map.run||[]).some(c=>key[c])||(touch&&TB.run)),rBuf=(map.run||[]).some(c=>now-(KP[c]||0)<BUF)||(touch&&now-(TBP.run||0)<BUF);
+  if((rCur&&!F.prev.run)||rBuf){F.runLatch=true;for(const c of map.run||[])delete KP[c];delete TBP.run}F.prev.run=rCur;
+  if(ml<.1&&!rCur)F.runLatch=false;
+  I.run=rCur||!!F.runLatch;return I;
 }
 
 // ================= state =================
