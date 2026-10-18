@@ -302,6 +302,15 @@ function makeJang(){const [g,b]=grp();
   const top=new THREE.Mesh(new THREE.CylinderGeometry(.42,.55,.6,16),lam(0x111118));top.position.y=4.05;b.add(top);
   g.userData.eyes=[];for(const s of[-1,1]){const e=glow(0xff5a2a,.6);e.position.set(s*.25,3.28,.72);e.visible=false;b.add(e);g.userData.eyes.push(e)}
   const base=new THREE.Mesh(new THREE.CylinderGeometry(1,1.15,.3,12),lam(0x3a3a48));base.position.y=.15;g.add(base);return g}
+function makeMuha(){const [g,b,add]=grp();
+  add(new THREE.CylinderGeometry(.24,.6,1.45,12),lam(0x9aa3b5),0,.72,0);add(new THREE.CylinderGeometry(.33,.36,.12,12),lam(0x1f6f7a),0,1.02,0);
+  add(new THREE.CylinderGeometry(.2,.26,.22,12),lam(0x9aa3b5),0,1.36,0);add(new THREE.SphereGeometry(.27,14,10),lam(0xe9d6c0),0,1.62,0);
+  add(new THREE.SphereGeometry(.285,14,10,0,PI*2,0,PI*.5),lam(0x1a1820),0,1.66,-.02).rotation.x=-.2;add(new THREE.SphereGeometry(.12,8,6),lam(0x1a1820),0,1.92,-.06);
+  for(const s of[-1,1])add(new THREE.BoxGeometry(.08,.02,.02),basic(0x7fe0ff),s*.1,1.64,.25);
+  const piv=new THREE.Group();piv.position.set(.32,1.0,.1);const hand=glow(0x7fb8ff,.7);hand.position.z=.45;piv.add(hand);b.add(piv);g.userData.piv=piv;
+  const halo=new THREE.Mesh(new THREE.TorusGeometry(.78,.018,6,48),basic(0x9fd0ff,{transparent:true,opacity:.7}));halo.rotation.x=PI/2;halo.position.y=1;g.add(halo);g.userData.halo=halo;
+  const field=new THREE.Mesh(new THREE.SphereGeometry(1.15,24,16),basic(0x7fb8ff,{transparent:true,opacity:.08,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));field.position.y=1;g.add(field);g.userData.field=field;
+  g.userData.ch=[glow(0x3d7bff,1.4),glow(0xff4a5c,1.4)];g.userData.ch.forEach(o=>{o.visible=false;g.add(o)});return g}
 function regMats(g){const mats=[];g.traverse(o=>{if(o.isMesh&&o.material.emissive&&!mats.includes(o.material)){o.material.userData.base=o.material.emissive.getHex();mats.push(o.material)}});g.userData.mats=mats}
 
 // ================= characters =================
@@ -335,39 +344,13 @@ const CH={
   s2:{name:'박치기',desc:'몸통으로 들이받기',cost:20,cd:4,windup:.4,active:.8,recover:.6,range:[5,14],start:F=>lunge(F,12),contact:15},
   s3:{name:'뿌리 솟기',desc:'상대 쪽으로 뿌리가 줄지어 솟음',cost:25,cd:5,windup:.45,active:.1,recover:.5,red:true,range:[0,12],ev:[[0,F=>{const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0),l=d.length();d.normalize();for(let i=1;i<=5;i++){const c=F.pos.clone().addScaledVector(d,1.5+i/5*(l+.5));clampV(c,A);tele(F,c,1.3,.4+i*.12,10,0xb07040,.8)}}]]},
   dom:{name:'서낭당',han:'城隍堂',sky:['#0c0604','#2e140c','#5a2a18'],acc:0xff7a3a,every:1.5,tick:F=>{wave(F,9,12,9);F.hp=Math.min(F.def.hp,F.hp+3)},desc:'충격파가 거듭 퍼지고 체력이 회복됨'}},
-  Gojo Satoru:{ name:'고죠 사토루', hp:1000, ce:300, color:'#7fb8ff',
-  // 패시브: 무하한 — updateFighter / hit 패치에서 처리
-  s1:{ name:'술식순전 · 창', cost:40, cd:4,
-    windup:0.25, active:0.6, recover:0.3,
-    ev:[[0, F=>{
-      const T=opp(F);
-      // 상대 앞쪽에 끌어당기는 점 생성 → 0.6초 동안 updateFighter에서 끌어당김
-      F.blueT=0.6;
-      F.blueX=F.x+F.face*180;
-      hit(F,T,40,{stun:0.4});
-    }]]
-  },
-  s2:{ name:'술식반전 · 혁', cost:70, cd:7,
-    windup:0.45, active:0.2, recover:0.4,
-    ev:[[0, F=>{
-      shoot(F,{ x:F.x+F.face*40, y:F.y-40, vx:F.face*900, vy:0,
-        r:22, dmg:120, color:'#ff4a5c', life:0.8,
-        stun:0.6, knock:F.face*700 });        // 맞으면 크게 밀려남
-    }]]
-  },
-  s3:{ name:'허식 · 자', cost:180, cd:20,
-    windup:1.0, active:0.5, recover:0.8,       // 창·혁을 합치는 긴 준비
-    ev:[
-      [0,   F=>{ F.superArmorT=1.0; }],          // 준비 중 끊기지 않게
-      [0.2, F=>{
-        shoot(F,{ x:F.x+F.face*50, y:F.y-50, vx:F.face*1300, vy:0,
-          r:60, dmg:320, color:'#aa5aff', life:1.2,
-          stun:1.0, pierce:true, eraseShots:true }); // 경로의 투사체 소멸
-        tele(F,{ x:F.x+F.face*400, w:800, delay:0.15, dmg:60, stun:0.3, color:'#aa5aff' });
-      }]
-    ]
-  }
-},
+ muha:{name:'무하',title:'무하한을 두른 술사',hp:95,spd:6.4,r:.5,build:makeMuha,keep:5,inf:true,
+  atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0x9fd0ff},
+  tal:{name:'청탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0x3d7bff})},
+  s1:{name:'창',desc:'끌어당기는 점을 만들어 상대와 투사체를 빨아들임',cost:25,cd:4,windup:.2,active:.1,recover:.3,range:[2,9],ev:[[0,F=>blueOrb(F)]]},
+  s2:{name:'혁',desc:'맞으면 크게 날아가는 붉은 구체',cost:30,cd:5,windup:.4,active:.1,recover:.35,red:true,range:[3,13],ev:[[0,F=>shoot(F,{kind:'orb',spd:20,dmg:13,col:0xff4a5c,big:1,heavy:1,stun:.4})]]},
+  s3:{name:'허식 · 자',desc:'창과 혁을 합친 관통 구체, 막을 수 없고 길 위의 투사체를 지움',cost:45,cd:10,windup:.9,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>shoot(F,{kind:'purple',spd:13,dmg:24,l:1.6,pierce:1})]]},
+  dom:{name:'무량공처',han:'無量空處',sky:['#02030a','#0b1630','#2a1f4a'],acc:0x9fd0ff,every:1.4,tick:F=>hit(F,opp(F),4,{unb:true,stun:.8}),desc:'끝없는 정보가 쏟아져 상대가 거듭 멈춤'}},
 };
 const IDS=Object.keys(CH);
 for(const id of IDS){CH[id].s1.key='s1';CH[id].s2.key='s2';CH[id].s3.key='s3'}ULT.key='ult';
@@ -426,7 +409,7 @@ function humanInput(F){
 }
 
 // ================= state =================
-let S={state:'select',mode:'cpu',diff:'normal',pick:['haram','baek'],t:0,stop:0,shake:0,slow:0,intro:0,f:[],proj:[],tele:[],waves:[],fx:[],strikes:[],lines:[],dom:null,wins:[0,0],round:1,gen:0,me:0,fp:['haram','baek']};
+let S={state:'select',mode:'cpu',diff:'normal',pick:['haram','baek'],t:0,stop:0,shake:0,slow:0,intro:0,f:[],proj:[],tele:[],waves:[],fx:[],strikes:[],lines:[],blues:[],dom:null,wins:[0,0],round:1,gen:0,me:0,fp:['haram','baek']};
 try{const s=JSON.parse(localStorage.getItem('versus-setup')||'{}');if(s.mode&&s.mode!=='net')S.mode=s.mode;if(s.diff)S.diff=s.diff;if(Array.isArray(s.pick)&&s.pick.every(i=>CH[i]))S.pick=s.pick}catch(_){}
 let ACT=0;
 const opp=F=>S.f[1-F.side];
@@ -448,8 +431,8 @@ function makeFighter(side,id,human){
 }
 function clearAll(){
   closeDomain();
-  for(const a of[S.proj,S.tele,S.waves,S.fx,S.strikes])for(const o of a)scene.remove(o.m);for(const l of S.lines)scene.remove(l.line);
-  S.proj=[];S.tele=[];S.waves=[];S.fx=[];S.strikes=[];S.lines=[];
+  for(const a of[S.proj,S.tele,S.waves,S.fx,S.strikes,S.blues])for(const o of a)scene.remove(o.m);for(const a of[S.lines,S.proj])for(const l of a)if(l.line)scene.remove(l.line);
+  S.blues=[];S.proj=[];S.tele=[];S.waves=[];S.fx=[];S.strikes=[];S.lines=[];
 }
 function setupFighters(){
   clearAll();for(const F of S.f)scene.remove(F.m,F.sh,F.ring);
@@ -478,6 +461,7 @@ function intro(){S.state='intro';S.intro=1.8;S.slow=0;banner(`${S.round}라운�
 // ================= combat core =================
 function spend(F,n){if(F.mp>=n){F.mp-=n;return true}if(F.human)pop(F,'영력 부족','var(--dim)');return false}
 function setFlash(F,on){for(const m of F.m.userData.mats)m.emissive.setHex(on?0xffffff:m.userData.base)}
+function infOn(T){return !!T.def.inf&&T.mp>=8&&T.state!=='stun'&&T.state!=='ko'&&!(S.dom&&S.dom.owner!==T)}
 function stun(F,t){F.state='stun';F.t=t;F.act=null;F.lv=null;F.tg.visible=false;F.guard=false;F.queued=false}
 function hit(Aa,T,dmg,o={}){
   if(S.mode==='net'){
@@ -487,6 +471,8 @@ function hit(Aa,T,dmg,o={}){
   return applyHit(Aa,T,dmg,o)}
 function applyHit(Aa,T,dmg,o={}){
   if(S.state!=='fight'||T.state==='ko'||T.inv>0)return false;
+  if(!o.unb&&infOn(T)){T.mp=Math.max(0,T.mp-(4+dmg*1.2));pop(T,'무하한','#9fd0ff');snd(1600,.1,'sine',.03,-900);
+    burst(T.pos.clone().setY(1.1).addScaledVector(Aa?Aa.pos.clone().sub(T.pos).setY(0).normalize():fwd(T.face),1.1),0x9fd0ff,8,3);return 'block'}
   if(T.counterT>0&&!o.unb&&!o.proj&&Aa&&Aa.state!=='ko'){T.counterT=0;T.tg.visible=false;const d=T.pos.clone().sub(Aa.pos).setY(0).normalize();burst(T.pos.clone().setY(1),0x6fb4ff,16,6);
     T.pos.copy(Aa.pos).addScaledVector(d,-(Aa.def.r+T.def.r+.6));clampV(T.pos,A);T.face=Math.atan2(Aa.pos.x-T.pos.x,Aa.pos.z-T.pos.z);if(T.state==='act'){T.act=null;T.state='free'}
     pop(T,'여우 받아치기!','#9fd0ff');snd(1000,.2,'sawtooth',.04,-600);S.stop=.1;slashFx(T,3);hit(T,Aa,10,{big:true,stun:.5});return 'parry'}
@@ -574,12 +560,14 @@ function shoot(F,o){
     else if(o.kind==='wave'){m=new THREE.Mesh(WAVE_GEO,basic(o.col,{transparent:true,opacity:.85,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));m.rotation.order='YXZ';m.rotation.set(-PI/2,a,0)}
     else if(o.kind==='chain'){m=new THREE.Mesh(ORB,basic(0x9fe6d6));m.add(glow(0x9fe6d6,1.2))}
     else if(o.kind==='rock'){m=new THREE.Mesh(new THREE.DodecahedronGeometry(.32),lam(0x6b5a4a))}
+    else if(o.kind==='purple'){m=new THREE.Mesh(new THREE.SphereGeometry(.7,16,12),basic(0xf2e6ff));m.add(glow(0xaa5aff,4.5));const bl=glow(0x3d7bff,2.2),rd=glow(0xff4a5c,2.2);bl.position.x=.5;rd.position.x=-.5;m.add(bl,rd)}
     else{m=new THREE.Mesh(ORB,basic(o.col===0x8a4dff?0x16121f:o.col));m.add(glow(o.col,1.3))}
     if(o.sp)m.position.set(o.sp[0],o.sp[1],o.sp[2]);else m.position.copy(F.pos).setY(1.1).addScaledVector(dir,F.def.r+.3);scene.add(m);
-    if(o.big)m.scale.setScalar(2.2);const b={m,v:dir.multiplyScalar(o.spd).setY(o.vy||0),dmg:o.dmg,l:o.l||2.5,own:F,kind:o.kind,homing:o.homing||0,stun:o.stun||0};
+    if(o.big)m.scale.setScalar(2.2);const b={m,v:dir.multiplyScalar(o.spd).setY(o.vy||0),dmg:o.dmg,l:o.l||2.5,own:F,kind:o.kind,homing:o.homing||0,stun:o.stun||0,heavy:o.heavy||0,pierce:o.pierce||0};
     if(o.kind==='chain'){b.line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(),new V3()]),new THREE.LineBasicMaterial({color:0x9fe6d6}));scene.add(b.line)}
     S.proj.push(b)}
-  snd(o.kind==='rock'?180:o.kind==='wave'?700:900,.1,'triangle',.04,-300);
+  if(o.kind==='purple'){snd(70,.9,'sawtooth',.07,-30);snd(500,.6,'sine',.04,-350);flash(.25);S.shake=Math.max(S.shake,.35)}
+  else snd(o.kind==='rock'?180:o.kind==='wave'?700:900,.1,'triangle',.04,-300);
 }
 function strike(F,c,r,dmg){if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'strike',a:{x:+c.x.toFixed(2),z:+c.z.toFixed(2),r}});const g=new THREE.Group();g.position.set(c.x,.05,c.z);
   const ring=new THREE.Mesh(new THREE.RingGeometry(r-.2,r,40),basic(0xbfe6ff,{transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-PI/2;g.add(ring);scene.add(g);
@@ -598,6 +586,23 @@ function slam(F){S.shake=Math.max(S.shake,.45);burst(F.pos.clone().addScaledVect
 function chainHit(Aa,T){const d=T.pos.clone().sub(Aa.pos).setY(0).normalize(),to=Aa.pos.clone().addScaledVector(d,T.def.r+Aa.def.r+.8);
   const r=hit(Aa,T,6,{proj:true,stun:T.def.armor?.6:1.0,pull:[+to.x.toFixed(2),+to.z.toFixed(2)]});if(r!=='hit'&&r!=='sent')return false;
   pop(Aa,'영쇄 적중','var(--spirit)');snd(300,.2,'square',.04,-150);return true}
+
+function blueOrb(F,c){const O=opp(F);
+  if(!c){const d=O.pos.clone().sub(F.pos).setY(0),l=d.length();d.normalize();c=F.pos.clone().addScaledVector(d,Math.min(l,Math.max(2.4,l*.5)));clampV(c,A)}
+  if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'blue',a:{x:+c.x.toFixed(2),z:+c.z.toFixed(2)}});
+  const g=new THREE.Group();g.position.set(c.x,1.1,c.z);const core=new THREE.Mesh(ORB,basic(0xdfe9ff));core.scale.setScalar(1.4);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.2,.03,6,40),basic(0x3d7bff,{transparent:true,opacity:.8,blending:THREE.AdditiveBlending,depthWrite:false}));
+  g.add(core,glow(0x3d7bff,3.2),ring);scene.add(g);S.blues.push({m:g,ring,c:c.clone(),t:0,dur:.9,own:F,hit:false});
+  snd(140,.5,'sine',.06,-80);snd(900,.3,'sine',.03,-700)}
+function updateBlues(dt){
+  for(const u of S.blues){u.t+=dt;u.ring.scale.setScalar(1.6-1.3*((u.t*2.5)%1));u.ring.rotation.x+=dt*3;u.ring.rotation.y+=dt*2;
+    const at=new V3(u.c.x,1.1,u.c.z);
+    for(const b of S.proj)if(b.l>0&&b.own!==u.own&&!b.pierce){const d=Math.hypot(b.m.position.x-u.c.x,b.m.position.z-u.c.z);if(d<3.2){b.m.position.lerp(at,Math.min(1,dt*8));if(d<.5){b.l=0;burst(at,0x3d7bff,4,3)}}}
+    const T=opp(u.own);
+    if(!u.hit&&u.t>.12&&T.state!=='ko'&&Math.hypot(T.pos.x-u.c.x,T.pos.z-u.c.z)<4.2+T.def.r){u.hit=true;
+      const r=hit(u.own,T,7,{stun:T.def.armor?.4:.8,pull:[+u.c.x.toFixed(2),+u.c.z.toFixed(2)]});if(r==='hit'||r==='sent')pop(u.own,'창 적중','#9fd0ff')}
+    if(u.t>=u.dur){u.done=true;scene.remove(u.m);burst(at,0x3d7bff,16,6)}}
+  S.blues=S.blues.filter(u=>!u.done)}
 
 // ---- 결계 현현 ----
 const DOMTEX={};
@@ -690,16 +695,21 @@ function separate(){const [a,b]=S.f;if(a.state==='ko'||b.state==='ko')return;
 // ================= world update =================
 function updateWorld(dt){
   updateDomain(dt);
-  for(const b of S.proj){const T=opp(b.own);
+  updateBlues(dt);
+  for(const b of S.proj){if(b.l<=0)continue;const T=opp(b.own);
     if(b.homing){const want=T.pos.clone().setY(1.1).sub(b.m.position).setY(0).normalize().multiplyScalar(b.v.length());b.v.lerp(want,Math.min(1,b.homing*dt));b.homing=Math.max(0,b.homing-dt*.6)}
-    b.m.position.addScaledVector(b.v,dt);b.l-=dt;if(b.kind==='tal'||b.kind==='rock')b.m.rotation.y+=dt*14;
+    let sp=1;if(!b.pierce&&infOn(T)){const dx=b.m.position.x-T.pos.x,dz=b.m.position.z-T.pos.z,d=Math.hypot(dx,dz);
+      if(d<2.8&&dx*b.v.x+dz*b.v.z<0){const k=Math.max(0,(d-1.15)/1.65);sp=k*k;T.mp=Math.max(0,T.mp-dt*3)}}
+    b.m.position.addScaledVector(b.v,dt*sp);b.l-=dt;
+    if(b.pierce){b.m.rotation.y+=dt*6;if(Math.random()<.6)burst(b.m.position,0xaa5aff,1,2);
+      for(const e of S.proj)if(e!==b&&e.l>0&&e.own!==b.own&&Math.hypot(e.m.position.x-b.m.position.x,e.m.position.z-b.m.position.z)<1.2){e.l=0;burst(e.m.position,0xaa5aff,6,5)}}if(b.kind==='tal'||b.kind==='rock')b.m.rotation.y+=dt*14;
     if(b.line){const pa=b.line.geometry.attributes.position;pa.setXYZ(0,b.own.pos.x,1.1,b.own.pos.z);pa.setXYZ(1,b.m.position.x,b.m.position.y,b.m.position.z);pa.needsUpdate=true}
-    if(T.state!=='ko'&&Math.hypot(T.pos.x-b.m.position.x,T.pos.z-b.m.position.z)<T.def.r+.45){
+    if(T.state!=='ko'&&!b.struck&&Math.hypot(T.pos.x-b.m.position.x,T.pos.z-b.m.position.z)<T.def.r+(b.pierce?1:.45)){
       if(b.kind==='chain'){if(chainHit(b.own,T)&&b.line){S.lines.push({line:b.line,a:b.own,b:T,t:.3});b.line=null}}
-      else hit(b.own,T,b.dmg,{proj:true,big:b.kind==='wave'||b.kind==='rock',stun:b.stun});b.l=0}
-    if(Math.abs(b.m.position.x)>13||Math.abs(b.m.position.z)>13)b.l=0;
-    if(b.l<=0){scene.remove(b.m);if(b.line)scene.remove(b.line)}}
-  S.proj=S.proj.filter(b=>b.l>0);
+      else hit(b.own,T,b.dmg,{proj:true,unb:!!b.pierce,big:b.kind==='wave'||b.kind==='rock'||!!b.heavy||!!b.pierce,stun:b.stun});
+      if(b.pierce)b.struck=true;else b.l=0}
+    if(Math.abs(b.m.position.x)>13||Math.abs(b.m.position.z)>13)b.l=0}
+  S.proj=S.proj.filter(b=>{if(b.l>0)return true;scene.remove(b.m);if(b.line)scene.remove(b.line);return false});
   for(const L of S.lines){L.t-=dt;const pa=L.line.geometry.attributes.position;pa.setXYZ(0,L.a.pos.x,1.1,L.a.pos.z);pa.setXYZ(1,L.b.pos.x,1.1,L.b.pos.z);pa.needsUpdate=true;if(L.t<=0)scene.remove(L.line)}
   S.lines=S.lines.filter(L=>L.t>0);
   for(const s of S.strikes){s.t+=dt;s.ring.material.opacity=.5+.5*Math.sin(s.t*40);const T=opp(s.own);
@@ -736,6 +746,8 @@ function syncF(F,dt){
   b.rotation.x+=(lean-b.rotation.x)*Math.min(1,dt*(F.state==='ko'?20:14));
   if(pv){const t=Math.min(1,dt*18);pv.rotation.x+=(ax-pv.rotation.x)*t;pv.rotation.y+=(ay-pv.rotation.y)*t;pv.rotation.z+=(az-pv.rotation.z)*t}
   if(m.userData.eyes)m.userData.eyes.forEach(e=>e.visible=F.state==='act');
+  if(m.userData.field){const on=infOn(F),U=m.userData;U.field.visible=on;U.field.material.opacity=.06+.03*Math.sin(S.t*3);U.halo.rotation.z+=dt*(on?2:.4);U.halo.material.opacity=on?.75:.2;
+    const a=F.act,ch=F.state==='act'&&a&&a.mv.key==='s3'&&a.phase==='windup';U.ch.forEach((o,i)=>{o.visible=ch;if(ch){const k=Math.max(0,a.t/a.mv.windup);o.position.set((i?-1:1)*(.2+1.1*k),1.1,.7)}})}
   if(F.id==='mung'&&F.state!=='ko')m.position.y=.12+Math.sin(S.t*2+F.side)*.07;
 }
 function sync(dt){
@@ -890,12 +902,13 @@ function handleEvt(R,e){const L=S.f[S.me];
   else if(e.k==='parried'){if(L.state!=='ko'&&S.state==='fight'){stun(L,1.2);L.mp=Math.max(0,L.mp-20);pop(R,'간파!','var(--paper)');S.stop=.12;snd(1400,.25,'sine',.06,-200)}}
   else if(e.k==='fx')netFx(R,e.n,e.a)}
 function netFx(R,n,a){if(!a||typeof a!=='object')return;
-  if(n==='shoot'){if(!['tal','orb','wave','chain','rock'].includes(a.kind))return;
-    const o={kind:a.kind,n:num(a.n,1,5,1)|0,spread:num(a.spread,0,1),spd:num(a.spd,1,40,12),dmg:0,col:num(a.col,0,0xffffff,0x9fe6d6)|0,l:num(a.l,.1,4,2.5),homing:num(a.homing,0,4),base:num(a.base,-10,10),big:a.big?1:0};
+  if(n==='shoot'){if(!['tal','orb','wave','chain','rock','purple'].includes(a.kind))return;
+    const o={kind:a.kind,n:num(a.n,1,5,1)|0,spread:num(a.spread,0,1),spd:num(a.spd,1,40,12),dmg:0,col:num(a.col,0,0xffffff,0x9fe6d6)|0,l:num(a.l,.1,4,2.5),homing:num(a.homing,0,4),base:num(a.base,-10,10),big:a.big?1:0,pierce:a.pierce?1:0};
     if(Array.isArray(a.sp))o.sp=[num(a.sp[0],-20,20),num(a.sp[1],0,10,1),num(a.sp[2],-20,20)];if(a.vy!=null)o.vy=num(a.vy,-20,20);shoot(R,o)}
   else if(n==='strike')strike(R,new V3(num(a.x,-13,13),0,num(a.z,-13,13)),num(a.r,.5,4,1.8),0);
   else if(n==='tele')tele(R,new V3(num(a.x,-13,13),0,num(a.z,-13,13)),num(a.r,.5,4,2),num(a.dur,.2,3,1),0,num(a.col,0,0xffffff,0x8a4dff)|0);
   else if(n==='wave')wave(R,num(a.spd,1,20,8),num(a.max,1,20,12),0,new V3(num(a.x,-13,13),0,num(a.z,-13,13)));
+  else if(n==='blue')blueOrb(R,new V3(num(a.x,-13,13),0,num(a.z,-13,13)));
   else if(n==='dom')openDomain(R)}
 function netEnd(msg){S.gen++;closeDomain();S.state='end';NET.ready=NET.match;
   $('endTag').textContent='온라인 대전';$('endH').textContent='대전 중단';$('endP').textContent=msg;$('again').disabled=false;$('end').hidden=false}
