@@ -478,7 +478,7 @@ function humanInput(F){
 // ================= state =================
 let S={state:'select',mode:'cpu',diff:'normal',pick:['yuji','muha'],t:0,stop:0,shake:0,slow:0,intro:0,f:[],proj:[],tele:[],waves:[],fx:[],strikes:[],lines:[],blues:[],shiki:[],dom:null,wins:[0,0],round:1,gen:0,me:0,fp:['yuji','muha']};
 try{const s=JSON.parse(localStorage.getItem('versus-setup')||'{}');if(s.mode&&s.mode!=='net')S.mode=s.mode;if(s.diff)S.diff=s.diff;if(Array.isArray(s.pick)&&s.pick.every(i=>CH[i]))S.pick=s.pick}catch(_){}
-let ACT=0;
+let ACT=0,DOMTAG=false; // 결계 효과(시전 충격·반복 공격)가 만든 공격 표시
 const opp=F=>S.f[1-F.side];
 const fwd=a=>new V3(Math.sin(a),0,Math.cos(a));
 function clampV(v,a){v.x=Math.max(-a,Math.min(a,v.x));v.z=Math.max(-a,Math.min(a,v.z))}
@@ -535,14 +535,16 @@ function infHit(T,amt){T.infG=Math.max(0,T.infG-amt*(T.def.six?.8:1)*zoneEff(T))
   if(T.infG<=0&&!(T.infBrk>0)){T.infBrk=4;pop(T,'무하한 붕괴','#ff8a7a');burst(T.pos.clone().setY(1.1),0x9fd0ff,30,9);flash(.2);S.shake=Math.max(S.shake,.3);snd(240,.5,'square',.05,-180)}}
 function stun(F,t){F.state='stun';F.t=t;F.act=null;F.lv=null;F.tg.visible=false;F.guard=false;F.queued=false}
 function hit(Aa,T,dmg,o={}){
+  if(DOMTAG&&!o.domFx)o=Object.assign({},o,{domFx:true});
   if(Aa&&Aa.otT>0)dmg*=1.4;
   if(S.mode==='net'){
     if(T.remote){if(!Aa||Aa.remote||S.state!=='fight'||T.state==='ko')return false;
-      sendEvt({k:'hit',dmg,o:{bf:o.bf?1:0,unb:o.unb?1:0,big:o.big?1:0,proj:o.proj?1:0,stun:o.stun||0,pull:o.pull||null}});Aa.mp=Math.min(100,Aa.mp+2);return 'sent'}
+      sendEvt({k:'hit',dmg,o:{df:o.domFx?1:0,bf:o.bf?1:0,unb:o.unb?1:0,big:o.big?1:0,proj:o.proj?1:0,stun:o.stun||0,pull:o.pull||null}});Aa.mp=Math.min(100,Aa.mp+2);return 'sent'}
     if(Aa&&Aa.remote)return false}
   return applyHit(Aa,T,dmg,o)}
 function applyHit(Aa,T,dmg,o={}){
   if(S.state!=='fight'||T.state==='ko'||T.inv>0)return false;
+  if(o.domFx&&T.sdT>0){sdDamage(T,dmg*.5);if(!T.sdPop||S.t-T.sdPop>.6){T.sdPop=S.t;pop(T,'간이 영역','#e7e4da')}burst(T.pos.clone().setY(.6),0xe7e4da,6,4);snd(900,.06,'triangle',.03,-300);return 'block'}
   // 영역 안: 전개한 사람의 공격은 전부 필중. 간이 영역이 켜져 있으면 필중만 사라지고 공격은 그대로 들어옴
   if(S.dom&&Aa&&S.dom.owner===Aa){if(T.sdT>0){if(o.unb){o=Object.assign({},o,{unb:false});if(!T.sdPop||S.t-T.sdPop>.8){T.sdPop=S.t;pop(T,'필중 무효','#e7e4da')}}}else o=Object.assign({},o,{unb:true})}
   if(!o.unb&&infOn(T)&&!(Aa&&Aa.ampOn&&!o.proj)){infHit(T,dmg*2.2);pop(T,'무하한','#9fd0ff');snd(1600,.1,'sine',.03,-900);
@@ -659,7 +661,7 @@ function shoot(F,o){
     else if(o.kind==='purple'){m=new THREE.Mesh(new THREE.SphereGeometry(.7,16,12),basic(0xf2e6ff));m.add(glow(0xaa5aff,4.5));const bl=glow(0x3d7bff,2.2),rd=glow(0xff4a5c,2.2);bl.position.x=.5;rd.position.x=-.5;m.add(bl,rd)}
     else{m=new THREE.Mesh(ORB,basic(o.col===0x8a4dff?0x16121f:o.col));m.add(glow(o.col,1.3))}
     if(o.sp)m.position.set(o.sp[0],o.sp[1],o.sp[2]);else m.position.copy(F.pos).setY(1.1).addScaledVector(dir,F.def.r+.3);scene.add(m);
-    if(o.big)m.scale.setScalar(2.2);const b={m,v:dir.multiplyScalar(o.spd).setY(o.vy||0),dmg:o.dmg,l:o.l||2.5,own:F,kind:o.kind,homing:o.homing||0,stun:o.stun||0,heavy:o.heavy||0,pierce:o.pierce||0};
+    if(o.big)m.scale.setScalar(2.2);const b={m,dom:DOMTAG,v:dir.multiplyScalar(o.spd).setY(o.vy||0),dmg:o.dmg,l:o.l||2.5,own:F,kind:o.kind,homing:o.homing||0,stun:o.stun||0,heavy:o.heavy||0,pierce:o.pierce||0};
     if(o.kind==='chain'){b.line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(),new V3()]),new THREE.LineBasicMaterial({color:0x9fe6d6}));scene.add(b.line)}
     S.proj.push(b)}
   if(o.kind==='purple'){snd(70,.9,'sawtooth',.07,-30);snd(500,.6,'sine',.04,-350);flash(.25);S.shake=Math.max(S.shake,.35)}
@@ -667,13 +669,13 @@ function shoot(F,o){
 }
 function strike(F,c,r,dmg){if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'strike',a:{x:+c.x.toFixed(2),z:+c.z.toFixed(2),r}});const g=new THREE.Group();g.position.set(c.x,.05,c.z);
   const ring=new THREE.Mesh(new THREE.RingGeometry(r-.2,r,40),basic(0xbfe6ff,{transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-PI/2;g.add(ring);scene.add(g);
-  S.strikes.push({m:g,ring,t:0,r,dmg,own:F});snd(1800,.3,'sawtooth',.02,-1200)}
+  S.strikes.push({m:g,ring,t:0,r,dmg,own:F,dom:DOMTAG});snd(1800,.3,'sawtooth',.02,-1200)}
 function tele(F,c,r,dur,dmg,col,stun){if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'tele',a:{x:+c.x.toFixed(2),z:+c.z.toFixed(2),r,dur,col}});const g=new THREE.Group();g.position.set(c.x,.04,c.z);
   const ring=new THREE.Mesh(new THREE.RingGeometry(r-.12,r,40),basic(col,{transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false}));ring.rotation.x=-PI/2;
   const fill=new THREE.Mesh(new THREE.CircleGeometry(1,40),basic(0xc7372f,{transparent:true,opacity:.2,side:THREE.DoubleSide,depthWrite:false}));fill.rotation.x=-PI/2;fill.position.y=.01;
-  g.add(ring,fill);scene.add(g);S.tele.push({m:g,fill,r,dur,t:0,dmg,own:F,col,stun:stun||0})}
+  g.add(ring,fill);scene.add(g);S.tele.push({m:g,fill,r,dur,t:0,dmg,own:F,dom:DOMTAG,col,stun:stun||0})}
 function wave(F,spd,max,dmg,c){c=c||F.pos.clone();if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'wave',a:{x:+c.x.toFixed(2),z:+c.z.toFixed(2),spd,max}});const m=new THREE.Mesh(new THREE.RingGeometry(.85,1,64),basic(0xff5a2a,{transparent:true,opacity:.9,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));
-  m.rotation.x=-PI/2;m.position.set(c.x,.08,c.z);scene.add(m);S.waves.push({m,c:c.clone(),r:.5,spd,max,dmg,hit:false,own:F})}
+  m.rotation.x=-PI/2;m.position.set(c.x,.08,c.z);scene.add(m);S.waves.push({m,dom:DOMTAG,c:c.clone(),r:.5,spd,max,dmg,hit:false,own:F})}
 function radial(F,range,dmg){const O=opp(F);burst(F.pos.clone().setY(1),0x8a4dff,16,9);if(Math.hypot(O.pos.x-F.pos.x,O.pos.z-F.pos.z)<range+O.def.r)hit(F,O,dmg,{big:true})}
 function blink(F){const O=opp(F);burst(F.pos.clone().setY(1),0x16121f,22,6);const a=Math.random()*PI*2;F.pos.set(O.pos.x+Math.cos(a)*7,0,O.pos.z+Math.sin(a)*7);clampV(F.pos,A-.6);
   burst(F.pos.clone().setY(1),0x8a4dff,22,6);snd(600,.2,'sine',.04,-400)}
@@ -753,7 +755,7 @@ function summon(F,type,x,z,o){
   else if(type==='nue'){m=mkNue();pos.y=3.5;k={life:2.2,phase:0,hp:1}}
   else if(type==='ele'){m=mkEle();const O=opp(F);pos.set(O.pos.x,7.5,O.pos.z);k={life:1.5,hp:99}}
   else{m=mkRabbit();const a=Math.random()*PI*2,r=.8+Math.random()*1.8;pos.x+=Math.cos(a)*r;pos.z+=Math.sin(a)*r;clampV(pos,A);k={life:2.6+Math.random()*.6,hp:1,ph:Math.random()*6}}
-  Object.assign(k,{type,m,pos,own:F,t:0});m.position.copy(pos);if(type==='dog')m.position.y=-.9;scene.add(m);S.shiki.push(k);
+  Object.assign(k,{type,m,pos,own:F,t:0,dom:DOMTAG});m.position.copy(pos);if(type==='dog')m.position.y=-.9;scene.add(m);S.shiki.push(k);
   burst(new V3(x,.15,z),0x05060c,type==='rabbit'?2:14,5);if(type!=='rabbit')burst(new V3(x,.15,z),0x5a6aff,6,4)}
 function killShiki(k){if(k.dead)return;k.dead=true;scene.remove(k.m);burst(k.m.position.clone().setY(Math.max(.4,k.m.position.y)),0x05060c,12,5)}
 function updateShiki(dt){
@@ -762,10 +764,10 @@ function updateShiki(dt){
       if(l>O.def.r+.95&&O.state!=='ko')k.pos.addScaledVector(d,Math.min(l-O.def.r-.9,9.5*dt));clampV(k.pos,A);
       m.position.set(k.pos.x,Math.min(0,-.9+k.t*5),k.pos.z);m.rotation.y=Math.atan2(d.x,d.z);
       m.userData.legs.forEach((g,i)=>g.rotation.x=Math.sin(k.t*16+(i%2)*PI)*.6);
-      k.cd-=dt;if(l<O.def.r+1.3&&k.cd<=0&&O.state!=='ko'&&k.t>.25){k.cd=1.1;m.position.addScaledVector(d,.35);burst(O.pos.clone().setY(.9),0xf2f0f5,5,4);snd(320,.08,'sawtooth',.03,-200);hit(F,O,3,{proj:true})}}
+      k.cd-=dt;if(l<O.def.r+1.3&&k.cd<=0&&O.state!=='ko'&&k.t>.25){k.cd=1.1;m.position.addScaledVector(d,.35);burst(O.pos.clone().setY(.9),0xf2f0f5,5,4);snd(320,.08,'sawtooth',.03,-200);hit(F,O,3,{proj:true,domFx:!!k.dom})}}
     else if(k.type==='nue'){const w=m.userData.wings;w[0].rotation.z=Math.sin(k.t*14)*.6;w[1].rotation.z=-Math.sin(k.t*14)*.6;
       if(k.phase===0){const to=O.pos.clone().setY(4);k.pos.lerp(to,Math.min(1,dt*3.2));m.lookAt(to.x,4,to.z);
-        if(k.t>.9){k.phase=1;k.at=O.pos.clone();m.userData.zap.visible=true;if(!F.remote)strike(F,k.at,1.8,12);snd(1400,.2,'sawtooth',.03,-900)}}
+        if(k.t>.9){k.phase=1;k.at=O.pos.clone();m.userData.zap.visible=true;if(!F.remote){DOMTAG=!!k.dom;strike(F,k.at,1.8,12);DOMTAG=false};snd(1400,.2,'sawtooth',.03,-900)}}
       else if(k.phase===1){k.pos.lerp(k.at.clone().setY(.8),Math.min(1,dt*7));m.userData.zap.scale.setScalar(1.4+Math.random());if(k.t>1.45)k.phase=2}
       else{k.pos.y+=dt*9;k.pos.x+=dt*4}
       m.position.copy(k.pos)}
@@ -797,7 +799,7 @@ function openDomain(F){
   g.add(dome,floor,moon);scene.add(g);
   S.dom={owner:F,g,dome,floor,rings,moon,orbs,t:0,dur:7,fire:.6,idx:0};
   scene.fog.color.setHex(0x0a0814);banner('결계 현현',`${F.def.name} · ${D.name}(${D.han})`);snd(110,1.6,'sine',.07,-50);snd(330,1.2,'triangle',.04,110);flash(.5);S.shake=.4;
-  if(Math.hypot(O.pos.x-F.pos.x,O.pos.z-F.pos.z)<8+O.def.r)hit(F,O,15,{unb:true,big:true,stun:1.0})
+  if(Math.hypot(O.pos.x-F.pos.x,O.pos.z-F.pos.z)<8+O.def.r)hit(F,O,15,{unb:true,big:true,stun:1.0,domFx:true})
 }
 function domTal(F){const d=S.dom,O=opp(F),p=d.orbs[d.idx++%12].position,dist=Math.max(1,Math.hypot(O.pos.x-p.x,O.pos.z-p.z));
   shoot(F,{kind:'tal',spd:15,dmg:3,l:2,homing:2.5,sp:[+p.x.toFixed(2),+p.y.toFixed(2),+p.z.toFixed(2)],vy:+((1.1-p.y)*15/dist).toFixed(2)})}
@@ -805,7 +807,7 @@ function updateDomain(dt){const d=S.dom;if(!d)return;d.t+=dt;
   const a=Math.min(1,d.t/.5)*Math.max(0,Math.min(1,(d.dur-d.t)/.5));
   d.dome.material.opacity=a;d.floor.material.opacity=a*.85;d.moon.material.opacity=a;d.rings.forEach((r,i)=>{r.material.opacity=a*.6;r.rotation.z+=dt*(i%2?-.25:.25)});
   d.orbs.forEach((m,i)=>{const an=i/12*PI*2+d.t*.4;m.position.set(Math.cos(an)*9,3+Math.sin(d.t*2+i)*.4,Math.sin(an)*9);if(m.isMesh)m.lookAt(0,3,0)});
-  d.fire-=dt;if(d.t>.6&&d.t<d.dur-.5&&d.fire<=0&&opp(d.owner).state!=='ko'&&!d.owner.remote){d.fire=d.owner.def.dom.every;d.owner.def.dom.tick(d.owner)}
+  d.fire-=dt;if(d.t>.6&&d.t<d.dur-.5&&d.fire<=0&&opp(d.owner).state!=='ko'&&!d.owner.remote){d.fire=d.owner.def.dom.every;DOMTAG=true;try{d.owner.def.dom.tick(d.owner)}finally{DOMTAG=false}}
   if(d.t>=d.dur)closeDomain()}
 function closeDomain(){if(!S.dom)return;scene.remove(S.dom.g);S.dom=null;scene.fog.color.setHex(0x0d0f1c)}
 
@@ -897,7 +899,7 @@ function updateWorld(dt){
     if(b.line){const pa=b.line.geometry.attributes.position;pa.setXYZ(0,b.own.pos.x,1.1,b.own.pos.z);pa.setXYZ(1,b.m.position.x,b.m.position.y,b.m.position.z);pa.needsUpdate=true}
     if(T.state!=='ko'&&!b.struck&&Math.hypot(T.pos.x-b.m.position.x,T.pos.z-b.m.position.z)<T.def.r+(b.pierce?1:.45)){
       if(b.kind==='chain'){if(chainHit(b.own,T)&&b.line){S.lines.push({line:b.line,a:b.own,b:T,t:.3});b.line=null}}
-      else hit(b.own,T,b.dmg,{proj:true,unb:!!b.pierce,big:b.kind==='wave'||b.kind==='rock'||!!b.heavy||!!b.pierce,stun:b.stun});
+      else hit(b.own,T,b.dmg,{domFx:!!b.dom,proj:true,unb:!!b.pierce,big:b.kind==='wave'||b.kind==='rock'||!!b.heavy||!!b.pierce,stun:b.stun});
       if(b.pierce)b.struck=true;else b.l=0}
     if(Math.abs(b.m.position.x)>EDGE||Math.abs(b.m.position.z)>EDGE)b.l=0}
   S.proj=S.proj.filter(b=>{if(b.l>0)return true;scene.remove(b.m);if(b.line)scene.remove(b.line);return false});
@@ -906,16 +908,16 @@ function updateWorld(dt){
   for(const s of S.strikes){s.t+=dt;s.ring.material.opacity=.5+.5*Math.sin(s.t*40);const T=opp(s.own);
     if(!s.hit&&s.t>=.45){s.hit=true;const bolt=new THREE.Mesh(new THREE.CylinderGeometry(.25,.5,14,8,1,true),basic(0xdff4ff,{transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
       bolt.position.y=7;s.m.add(bolt);s.bolt=bolt;flash(.25);S.shake=Math.max(S.shake,.35);snd(90,.5,'sawtooth',.08,-40);burst(s.m.position.clone().setY(.3),0xbfe6ff,20,9);
-      if(T.state!=='ko'&&Math.hypot(T.pos.x-s.m.position.x,T.pos.z-s.m.position.z)<s.r+T.def.r*.5)hit(s.own,T,s.dmg,{unb:true,big:true,stun:T.def.armor?.35:.7})}
+      if(T.state!=='ko'&&Math.hypot(T.pos.x-s.m.position.x,T.pos.z-s.m.position.z)<s.r+T.def.r*.5)hit(s.own,T,s.dmg,{domFx:!!s.dom,unb:true,big:true,stun:T.def.armor?.35:.7})}
     if(s.bolt)s.bolt.material.opacity=Math.max(0,.95-(s.t-.45)*4);
     if(s.t>.75){s.done=true;scene.remove(s.m)}}
   S.strikes=S.strikes.filter(s=>!s.done);
   for(const t of S.tele){t.t+=dt;const k=Math.min(1,t.t/t.dur);t.fill.scale.setScalar(k*t.r);t.fill.material.opacity=.15+k*.35;
     if(t.t>=t.dur){t.done=true;scene.remove(t.m);burst(t.m.position.clone().setY(.3),0x16121f,14,7);burst(t.m.position.clone().setY(.3),t.col,6,5);S.shake=Math.max(S.shake,.12);
-      const T=opp(t.own);if(T.state!=='ko'&&Math.hypot(T.pos.x-t.m.position.x,T.pos.z-t.m.position.z)<t.r)hit(t.own,T,t.dmg,{unb:true,stun:t.stun})}}
+      const T=opp(t.own);if(T.state!=='ko'&&Math.hypot(T.pos.x-t.m.position.x,T.pos.z-t.m.position.z)<t.r)hit(t.own,T,t.dmg,{domFx:!!t.dom,unb:true,stun:t.stun})}}
   S.tele=S.tele.filter(t=>!t.done);
   for(const w of S.waves){w.r+=w.spd*dt;w.m.scale.setScalar(w.r);w.m.material.opacity=.9*(1-w.r/w.max);const T=opp(w.own);
-    const pd=Math.hypot(T.pos.x-w.c.x,T.pos.z-w.c.z);if(!w.hit&&T.state!=='ko'&&Math.abs(pd-w.r)<.55+T.def.r*.3){w.hit=true;hit(w.own,T,w.dmg,{unb:true})}
+    const pd=Math.hypot(T.pos.x-w.c.x,T.pos.z-w.c.z);if(!w.hit&&T.state!=='ko'&&Math.abs(pd-w.r)<.55+T.def.r*.3){w.hit=true;hit(w.own,T,w.dmg,{domFx:!!w.dom,unb:true})}
     if(w.r>=w.max){w.done=true;scene.remove(w.m)}}
   S.waves=S.waves.filter(w=>!w.done);
 }
@@ -993,7 +995,7 @@ function loop(ts){
 
 // ================= menus =================
 function seg(id,val,on){document.querySelectorAll('#'+id+' button').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.v===val));b.onclick=()=>on(b.dataset.v)})}
-const COMMON='공통 · <b>흑섬</b> 주력을 담은 공격이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · 흑섬 뒤 6초는 <b>존</b>: 영력 소모 25~40% 감소, 반전술식 회복 1.5~2배 · <b>영역전연</b> 켜 둔 동안 근접 공격이 무하한을 뚫음, 초당 영력 8, 대신 술식을 쓰면 풀림 · <b>막기</b> 누르고 있는 동안만, 누른 직후 맞으면 간파 · <b>반전술식</b> 누르고 있는 동안 영력을 써서 계속 회복(맞는 중·기절 중에도), 회복 중엔 느려짐 · <b>결계</b> 펼친 사람의 공격은 전부 필중 · <b>간이 영역</b> 언제든 4초, 상대 결계의 필중 효과만 지움(공격은 막아야 함), 들어오는 상대를 자동으로 벰, 피해 25를 받으면 깨짐';
+const COMMON='공통 · <b>흑섬</b> 주력을 담은 공격이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · 흑섬 뒤 6초는 <b>존</b>: 영력 소모 25~40% 감소, 반전술식 회복 1.5~2배 · <b>영역전연</b> 켜 둔 동안 근접 공격이 무하한을 뚫음, 초당 영력 8, 대신 술식을 쓰면 풀림 · <b>막기</b> 누르고 있는 동안만, 누른 직후 맞으면 간파 · <b>반전술식</b> 누르고 있는 동안 영력을 써서 계속 회복(맞는 중·기절 중에도), 회복 중엔 느려짐 · <b>결계</b> 펼친 사람의 공격은 전부 필중 · <b>간이 영역</b> 언제든 4초, 상대 결계 효과(시전 충격·반복 공격)를 막고 전개한 사람의 필중을 지움(직접 공격은 막아야 함), 들어오는 상대를 자동으로 벰, 피해 25를 받으면 깨짐';
 function keysText(){return keysText0()+'<br><span style="color:var(--dim)">'+COMMON+'</span>'}
 function keysText0(){
   if(S.mode==='net')return '<kbd>WASD</kbd> 이동 · 이동 키 두 번 톡 · 대시 · 좌클릭·<kbd>[</kbd>·<kbd>C</kbd> 주력을 담은 공격 (누르고 있으면 연속) · 우클릭·<kbd>Z</kbd> 비술1 · <kbd>X</kbd> 비술2 · <kbd>V</kbd> 비술3 · <kbd>F</kbd> 결계 · <kbd>R</kbd> 반전술식 · <kbd>G</kbd> 간이 영역 · <kbd>T</kbd> 영역전연 · <kbd>Shift</kbd>·<kbd>K</kbd> 막기(꾹) · 시점 자동 락온 (마우스 끌기·<kbd>Q</kbd><kbd>E</kbd>·<kbd>←</kbd><kbd>→</kbd>로 살짝 조정)<br>폰: 왼쪽 화면 어디를 눌러도 조이스틱, 조이스틱 둘레 ▲▼◀▶ 버튼으로 그 방향 대시, 오른쪽 화면을 끌면 시점 조정, 주력을 담은 공격 버튼은 누른 채 끌어도 시점이 돌아요.<br>친구에게 이 페이지를 공유한 뒤, 한 명이 방을 만들고 다른 한 명이 같은 코드로 들어오세요.';
@@ -1093,7 +1095,7 @@ function updateRemote(R,dt){
   if(R.flash>0){R.flash-=dt;if(R.flash<=0)setFlash(R,false)}
   if(R.state==='ko')R.koT+=dt;if(R.tg.visible)R.tg.scale.setScalar(1.2+Math.sin(S.t*30)*.3)}
 function handleEvt(R,e){const L=S.f[S.me];
-  if(e.k==='hit'){const o=e.o||{};{const r=applyHit(R,L,num(e.dmg,0,40),{bf:!!o.bf,unb:!!o.unb,big:!!o.big,proj:!!o.proj,stun:num(o.stun,0,2),pull:Array.isArray(o.pull)?[num(o.pull[0],-A,A),num(o.pull[1],-A,A)]:null});if(o.bf&&r==='hit')blackFlash(R,L)}}
+  if(e.k==='hit'){const o=e.o||{};{const r=applyHit(R,L,num(e.dmg,0,40),{domFx:!!o.df,bf:!!o.bf,unb:!!o.unb,big:!!o.big,proj:!!o.proj,stun:num(o.stun,0,2),pull:Array.isArray(o.pull)?[num(o.pull[0],-A,A),num(o.pull[1],-A,A)]:null});if(o.bf&&r==='hit')blackFlash(R,L)}}
   else if(e.k==='parried'){if(L.state!=='ko'&&S.state==='fight'){stun(L,1.2);L.mp=Math.max(0,L.mp-20);pop(R,'간파!','var(--paper)');S.stop=.12;snd(1400,.25,'sine',.06,-200)}}
   else if(e.k==='fx')netFx(R,e.n,e.a)}
 function netFx(R,n,a){if(!a||typeof a!=='object')return;
