@@ -380,7 +380,7 @@ function regMats(g){const mats=[];g.traverse(o=>{if(o.isMesh&&o.material.emissiv
 
 // ================= characters =================
 // 공통 술식: 모든 캐릭터가 사용
-const RCT={kind:'rct',name:'반전술식',cost:30,cd:0,rate:.16,fade:.12,min:.25,bf:.5}; // 쓰는 1초마다 출력 12%p 감소(최저 25%), 흑섬 한 번에 50%p 회복 // 누르는 동안 초당 주력 30 → 초당 최대 체력 16% 회복
+const RCT={kind:'rct',name:'반전술식',cost:30,cd:0,rate:.16,fade:.06,min:.25,bf:.5}; // 쓰는 1초마다 출력 6%p 감소(최저 25%), 흑섬 한 번에 50%p 회복 // 누르는 동안 초당 주력 30 → 초당 최대 체력 16% 회복
 const SD={kind:'sd',name:'간이 영역',cost:20,cd:0,windup:.12,active:.05,recover:.1,dur:4,hp:25,start:F=>openSD(F)};
 // 결계를 펼칠 수 있는지: 결계가 없을 때, 또는 결계 없는 영역(복마어주자)으로 상대 결계를 깰 때
 const canDom=F=>!S.dom||(!!F.def.dom.noBarrier&&S.dom.owner!==F);
