@@ -399,7 +399,7 @@ const SD={kind:'sd',name:'간이 영역',cost:20,cd:0,windup:.12,active:.05,reco
 const canDom=F=>!S.dom||(!!F.def.dom.noBarrier&&S.dom.owner!==F);
 const ULT={kind:'ult',name:'영역 전개',cost:50,cd:20,windup:.45,active:.1,recover:.3,red:true,ev:[[0,F=>openDomain(F)]]};
 const CH={
- yuji:{name:'이타도리 유지',title:'맨손으로 싸우는 그릇',hp:115,spd:7,r:.5,build:makeYuji,keep:2.4,bf:.06,
+ yuji:{name:'이타도리 유지',title:'맨손으로 싸우는 그릇',hp:115,noPoison:true,spd:7,r:.5,build:makeYuji,keep:2.4,bf:.06,
   atk:{range:2.3,dmg:[5,5,9],wu:.06,col:0xff9a5a},
   tal:{name:'주력탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0xff9a5a})},
   s1:{name:'경',desc:'파고드는 주먹, 맞히면 늦게 따라오는 주력이 한 번 더 때림',cost:20,cd:3,windup:.15,active:.4,recover:.3,range:[2.5,9],start:F=>lunge(F,17),contact:9,ev:[[.32,F=>divergent(F)]]},
@@ -421,7 +421,7 @@ const CH={
   s2:{name:'칠삼 일격',desc:'선 위의 약점을 겨눠 들이받는 일격',cost:25,cd:4,windup:.35,active:.35,recover:.4,range:[3,10],start:F=>lunge(F,18),contact:15},
   s3:{name:'시간 외 노동',desc:'6초 동안 모든 공격 위력 1.4배',cost:30,cd:15,windup:.2,active:.1,recover:.2,start:F=>{F.otT=6;pop(F,'시간 외 노동','#e6c84a');burst(F.pos.clone().setY(1.2),0xe6c84a,22,6);snd(180,.5,'sawtooth',.05,-60)},range:[0,99]},
   dom:{name:'칠삼 결계',han:'七三結界',sky:['#0a0904','#262010','#4a3a18'],acc:0xe6c84a,every:.9,tick:F=>tele(F,opp(F).pos.clone(),1.6,.55,9,0xe6c84a,.4),desc:'선 그어진 약점마다 일격이 떨어짐'}},
- choso:{name:'쵸소',title:'피를 다루는 주술사',hp:105,spd:6.2,r:.5,build:makeChoso,keep:7,
+ choso:{name:'쵸소',title:'피를 다루는 주술사',hp:105,venom:true,spd:6.2,r:.5,build:makeChoso,keep:7,
   atk:{range:2.4,dmg:[4,4,7],wu:.07,col:0xd8203a},
   tal:{name:'혈탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:17,dmg:4,col:0xc0102a})},
   s1:{name:'천혈',desc:'압축한 피를 한 줄기로 쏘아 멀리까지 꿰뚫음',cost:30,cd:5,windup:.45,active:.1,recover:.35,red:true,range:[3,30],ev:[[0,F=>beam(F,30,15)]]},
@@ -443,7 +443,7 @@ const CH={
   s3:{name:'허식 · 자',desc:'창과 혁을 합친 관통 구체, 막을 수 없고 길 위의 투사체를 지움',cost:45,cd:10,windup:.9,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>shoot(F,{kind:'purple',spd:13,dmg:24,l:1.6,pierce:1})]]},
   dom:{name:'무량공처',han:'無量空處',sky:['#02030a','#0b1630','#2a1f4a'],acc:0x9fd0ff,every:1.4,tick:F=>hit(F,opp(F),4,{unb:true,stun:.8}),desc:'끝없는 정보가 쏟아져 상대가 거듭 멈춤'}},
 
- yeom:{name:'스쿠나',title:'참격과 불을 다루는 저주',hp:105,spd:6.6,r:.55,build:makeYeom,keep:3.2,bf:.03,
+ yeom:{name:'스쿠나',title:'참격과 불을 다루는 저주',hp:105,noPoison:true,spd:6.6,r:.55,build:makeYeom,keep:3.2,bf:.03,
   atk:{range:2.5,dmg:[5,5,8],wu:.07,col:0xff4a3a},
   tal:{name:'불씨',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:16,dmg:4,col:0xff7a1a})},
   s1:{name:'해',desc:'보이지 않을 만큼 빠른 참격을 날림',cost:20,cd:2.5,windup:.12,active:.1,recover:.2,range:[2,13],ev:[[0,F=>shoot(F,{kind:'wave',spd:28,dmg:9,col:0xff3a4a,l:.7})]]},
@@ -602,7 +602,7 @@ function setupFighters(){
 function resetRound(){
   clearAll();
   for(const F of S.f){Object.assign(F,{hp:F.def.hp,mp:100,state:'free',act:null,inv:0,stag:0,guard:false,dashT:0,dashCd:0,lv:null,combo:0,queued:false,pull:null,koT:0,aiParry:false});
-    F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.counterT=0;F.otT=0;F.redT=0;F.infG=100;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);F.pos.set(0,0,F.side?-5:5);F.face=F.side?0:PI;F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
+    F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.counterT=0;F.otT=0;F.redT=0;F.psT=0;F.psN=0;F.infG=100;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);F.pos.set(0,0,F.side?-5:5);F.face=F.side?0:PI;F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
 }
 function startMatch(){
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(_){}
@@ -621,6 +621,9 @@ function infOn(T){return !!T.def.inf&&T.infG>0&&!(T.infBrk>0)&&T.state!=='stun'&
 const INF_CD=6; // 무하한이 깨진 뒤 다시 생기기까지(초)
 function infHit(T,amt){T.infG=Math.max(0,T.infG-amt*(T.def.six?.8:1)*zoneEff(T));T.infLast=S.t;
   if(T.infG<=0&&!(T.infBrk>0)){T.infBrk=INF_CD;pop(T,'무하한 붕괴','#ff8a7a');burst(T.pos.clone().setY(1.1),0x9fd0ff,30,9);flash(.2);S.shake=Math.max(S.shake,.3);snd(240,.5,'square',.05,-180)}}
+// 쵸소의 피는 맹독: 맞을 때마다 독이 쌓이고(최대 3중첩) 4초 동안 초당 1.2×중첩만큼 체력이 깎임
+function poison(T){if(T.def.noPoison){if(!T.psPop||S.t-T.psPop>2){T.psPop=S.t;pop(T,'독 면역','#b8ffb0')}return}
+  T.psN=Math.min(3,(T.psT>0?T.psN:0)+1);T.psT=4}
 function stun(F,t){F.state='stun';F.t=t;F.act=null;F.lv=null;F.tg.visible=false;F.guard=false;F.queued=false}
 function hit(Aa,T,dmg,o={}){
   if(DOMTAG&&!o.domFx)o=Object.assign({},o,{domFx:true});
@@ -660,7 +663,7 @@ function applyHit(Aa,T,dmg,o={}){
   T.kb.copy(kb.normalize()).multiplyScalar((T.def.armor?.25:1)*(o.big?10:4));
   T.flash=.1;setFlash(T,true);burst(T.pos.clone().setY(1.1),T.side?0xff8a7a:0x9fe6d6,10,6);S.shake=Math.max(S.shake,o.big?.3:.12);snd(o.big?200:320,.12,'square',.05,-150);
   if(Aa)Aa.mp=Math.min(100,Aa.mp+2);
-  T.hp=Math.max(0,T.hp-dmg);sdDamage(T,dmg);if(T.hp<=0)ko(T);else{if(o.pull)T.pull={to:new V3(+o.pull[0]||0,0,+o.pull[1]||0),t:.25};if(o.stun&&!holdAct)stun(T,o.stun)}return 'hit';
+  T.hp=Math.max(0,T.hp-dmg);sdDamage(T,dmg);if(T.hp<=0)ko(T);else{if(Aa&&Aa.def.venom)poison(T);if(o.pull)T.pull={to:new V3(+o.pull[0]||0,0,+o.pull[1]||0),t:.25};if(o.stun&&!holdAct)stun(T,o.stun)}return 'hit';
 }
 function ko(T){
   if(S.state!=='fight')return;T.state='ko';T.koT=0;T.act=null;T.tg.visible=false;T.lv=null;S.state='ko';S.slow=1.3;closeDomain();
@@ -963,6 +966,8 @@ function updateFighter(F,I,dt){
   // 무하한 게이지는 저절로 차지 않음. 깨진 뒤 쿨타임이 끝나야 가득 찬 채로 다시 생김
   if(F.def.inf&&F.infBrk>0){F.infBrk-=dt;if(F.infBrk<=0){F.infBrk=0;F.infG=100;pop(F,'무하한 재생','#9fd0ff');burst(F.pos.clone().setY(1.1),0x9fd0ff,20,6);snd(880,.3,'sine',.04,440)}}
   if(F.ampOn){F.mp=Math.max(0,F.mp-AMP.drain*zoneEff(F)*dt);if(F.mp<=0)setAmp(F,false)}
+  if(F.psT>0){F.psT-=dt;F.hp=Math.max(0,F.hp-1.2*F.psN*dt);if(Math.random()<.25)burst(F.pos.clone().setY(.4+Math.random()*1.4),0x8a2a9a,1,2);
+    if(F.hp<=0&&S.state==='fight')ko(F);if(F.psT<=0)F.psN=0}
   if(F.redT>0){F.redT-=dt;if(Math.random()<.3)burst(F.pos.clone().setY(.5+Math.random()*1.3),0xd8203a,1,2)}
   if(F.otT>0){F.otT-=dt;if(Math.random()<.2)burst(F.pos.clone().setY(1+Math.random()),0xe6c84a,1,2)}
   if(F.sdT>0){F.sdT-=dt;F.sdHit-=dt;const O2=opp(F);
@@ -1074,7 +1079,7 @@ let hudKey='';
 function hud(){
   const a=S.f[S.me],b=S.f[1-S.me];const k=[a.hp,a.mp|0,b.hp,b.mp|0,S.wins,S.round,a.cd.s1>0,Math.ceil(a.cd.s1*10),Math.ceil(a.cd.s2*10),Math.ceil(a.cd.s3*10),Math.ceil(a.cd.ult*10),!!S.dom].join('|');if(k===hudKey)return;hudKey=k;
   for(const F of S.f){const i=F.side;$('hp'+i).style.width=Math.max(0,F.hp/F.def.hp*100)+'%';$('mp'+i).style.width=F.mp+'%';$('gb'+i).classList.toggle('full',F.mp>=100);
-    $('t'+i).textContent='주력 '+(F.mp|0)+(F.zoneT>0?' · 존'+(F.zone>1?' ×'+F.zone:''):'')+(F.rctOut<.995?' · 반전 '+Math.round(F.rctOut*100)+'%':'');[...$('rd'+i).children].forEach((d,j)=>d.classList.toggle('on',S.wins[i]>j))}
+    $('t'+i).textContent='주력 '+(F.mp|0)+(F.zoneT>0?' · 존'+(F.zone>1?' ×'+F.zone:''):'')+(F.psT>0?' · 독'+(F.psN>1?' ×'+F.psN:''):'')+(F.rctOut<.995?' · 반전 '+Math.round(F.rctOut*100)+'%':'');[...$('rd'+i).children].forEach((d,j)=>d.classList.toggle('on',S.wins[i]>j))}
   $('rlab').textContent=S.round+'라운드';
   $('bUlt').classList.toggle('ready',a.cd.ult<=0&&a.mp>=ULT.cost&&canDom(a));$('bUlt').classList.toggle('low',a.cd.ult>0||a.mp<ULT.cost||!canDom(a));
   for(const F of S.f){const i=F.side;$('ib'+i).hidden=!F.def.inf;if(F.def.inf){$('ig'+i).style.width=(F.infBrk>0?(1-F.infBrk/INF_CD)*100:F.infG)+'%';$('ib'+i).classList.toggle('brk',F.infBrk>0)}}
@@ -1112,7 +1117,7 @@ function keysText0(){
   return '<b>1P</b> <kbd>WASD</kbd> 이동 (두 번 톡 또는 <kbd>R</kbd> · 대시, <kbd>V</kbd> 달리기) · <kbd>F</kbd> 주력을 담은 공격 · <kbd>H</kbd> 막기(꾹) · <kbd>T</kbd> <kbd>Y</kbd> <kbd>Q</kbd> 비술 · <kbd>E</kbd> 결계 · <kbd>Z</kbd> 반전술식 · <kbd>X</kbd> 간이 영역 · <kbd>C</kbd> 영역전연<br>'+
     '<b>2P</b> <kbd>방향키</kbd> 이동 (두 번 톡 또는 <kbd>Enter</kbd> · 대시, <kbd>,</kbd> 달리기) · <kbd>.</kbd> 주력을 담은 공격 · <kbd>오른쪽 Shift</kbd> 막기(꾹) · <kbd>;</kbd> <kbd>\'</kbd> <kbd>[</kbd> 비술 · <kbd>]</kbd> 결계 · <kbd>\\</kbd> 반전술식 · <kbd>=</kbd> 간이 영역 · <kbd>-</kbd> 영역전연 (숫자패드 1·4·5·7·6도 가능)<br>둘이서 대전은 키보드 하나를 함께 씁니다.';
 }
-const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 저절로 차지 않음, 0이 되면 깨지고 6초 뒤 가득 찬 채로 다시 생김, 결계가 펼쳐져 있는 동안은 꺼짐':''}${c.six?' · <b>육안</b> 주력 소모 25% 감소, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (주력 50·20초)`;
+const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 저절로 차지 않음, 0이 되면 깨지고 6초 뒤 가득 찬 채로 다시 생김, 결계가 펼쳐져 있는 동안은 꺼짐':''}${c.six?' · <b>육안</b> 주력 소모 25% 감소, 회복 25% 증가':''}${c.bf?' · 흑섬 확률 +'+Math.round(c.bf*100)+'%':''}${c.venom?' · <b>맹독성 피</b> 공격을 맞히면 독이 쌓여(최대 3중첩) 4초 동안 체력이 계속 깎임':''}${c.noPoison?' · 독 면역':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${c.s1.cost}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${c.s2.cost}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${c.s3.cost}·${c.s3.cd}초)<br>결계 <b>${c.dom.name}</b> ${c.dom.desc} (주력 50·20초)`;
 function remoteCh(){const o=NET.remote;return o&&CH[o.presence.ch]?o.presence.ch:null}
 function renderSelect(){
   seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});
