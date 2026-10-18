@@ -1141,7 +1141,7 @@ function openDomain(F){
     else if(!nb&&ob){d.breakT=.2;banner('결계 파괴',`${other.owner.def.name} · ${other.owner.def.dom.name} — 결계 없는 영역이 ${D.name}을 베어 냄`,2);S.shake=.7}
     else if(nb&&ob)banner('영역 공존',`결계 없는 영역끼리는 서로 깨지 않고 둘 다 계속돼요`,1.8);
     else{S.clash={a:other,b:d,v:0};banner('영역 줄다리기',`${other.owner.def.dom.name} 對 ${D.name} · 체력과 주력이 많은 쪽이 밀어붙여요`,2)}}
-  else banner('결계 현현',`${F.def.name} · ${D.name}(${D.han})`);
+  else banner('영역 전개',`${F.def.name} · ${D.name}(${D.han})`);
   snd(110,1.6,'sine',.07,-50);snd(330,1.2,'triangle',.04,110);flash(.5);S.shake=Math.max(S.shake,.4);
   if(!other)for(const E of foes(F))if(Math.hypot(E.pos.x-F.pos.x,E.pos.z-F.pos.z)<8+E.def.r)hit(F,E,15,{unb:true,big:true,stun:1.0,domFx:true})
 }
