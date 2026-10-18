@@ -376,6 +376,19 @@ function makeNanami(){const [g,b,add]=grp();
   const piv=new THREE.Group();piv.position.set(.34,1.0,.1);const bl=new THREE.Mesh(new THREE.BoxGeometry(.12,.06,.9),lam(0xcfcfd4));bl.position.z=.6;
   const wrap=new THREE.Mesh(new THREE.BoxGeometry(.14,.08,.6),lam(0xd8cfae));wrap.position.z=.6;wrap.scale.set(1.05,1.2,.9);
   const h=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,.24),lam(0x2a2018));piv.add(bl,wrap,h);b.add(piv);g.userData.piv=piv;return g}
+function makeChoso(){const [g,b,add]=grp();
+  add(new THREE.CylinderGeometry(.25,.6,1.5,12),lam(0x3a1218),0,.75,0);add(new THREE.CylinderGeometry(.33,.36,.1,12),lam(0xc0102a),0,1.05,0);
+  add(new THREE.BoxGeometry(.6,.4,.3),lam(0x2a0c10),0,1.3,0);add(new THREE.SphereGeometry(.27,14,10),lam(0xe2d0c0),0,1.62,0);
+  add(new THREE.SphereGeometry(.28,14,10,0,PI*2,0,PI*.5),lam(0x141016),0,1.66,-.01).rotation.x=-.2;
+  for(const s of[-1,1])add(new THREE.BoxGeometry(.07,.02,.02),basic(0x6a1018),s*.1,1.63,.26);
+  const piv=new THREE.Group();piv.position.set(.33,1.0,.1);const drop=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),basic(0xc0102a));drop.position.z=.42;
+  piv.add(drop,glow(0xd8203a,.6));piv.children[1].position.z=.42;b.add(piv);g.userData.piv=piv;return g}
+function makeTodo(){const [g,b,add]=grp();
+  add(new THREE.CylinderGeometry(.34,.55,1.2,10),lam(0x2a2e3a),0,.6,0);add(new THREE.BoxGeometry(.95,.7,.5),lam(0x5a5e6a),0,1.35,0);
+  for(const s of[-1,1]){const arm=add(new THREE.BoxGeometry(.24,.7,.26),lam(0xc8a88a),s*.6,1.25,0);arm.rotation.z=s*.12}
+  add(new THREE.SphereGeometry(.28,14,10),lam(0xc8a88a),0,1.92,0);add(new THREE.BoxGeometry(.6,.1,.5),lam(0x8a2a24),0,2.08,0);
+  for(const s of[-1,1])add(new THREE.BoxGeometry(.08,.025,.02),basic(0x222222),s*.1,1.95,.27);
+  const piv=new THREE.Group();piv.position.set(.6,1.15,.1);const fist=new THREE.Mesh(new THREE.BoxGeometry(.28,.28,.3),lam(0xc8a88a));fist.position.z=.4;piv.add(fist);b.add(piv);g.userData.piv=piv;return g}
 function regMats(g){const mats=[];g.traverse(o=>{if(o.isMesh&&o.material.emissive&&!mats.includes(o.material)){o.material.userData.base=o.material.emissive.getHex();mats.push(o.material)}});g.userData.mats=mats}
 
 // ================= characters =================
@@ -408,6 +421,20 @@ const CH={
   s2:{name:'칠삼 일격',desc:'선 위의 약점을 겨눠 들이받는 일격',cost:25,cd:4,windup:.35,active:.35,recover:.4,range:[3,10],start:F=>lunge(F,18),contact:15},
   s3:{name:'시간 외 노동',desc:'6초 동안 모든 공격 위력 1.4배',cost:30,cd:15,windup:.2,active:.1,recover:.2,start:F=>{F.otT=6;pop(F,'시간 외 노동','#e6c84a');burst(F.pos.clone().setY(1.2),0xe6c84a,22,6);snd(180,.5,'sawtooth',.05,-60)},range:[0,99]},
   dom:{name:'칠삼 결계',han:'七三結界',sky:['#0a0904','#262010','#4a3a18'],acc:0xe6c84a,every:.9,tick:F=>tele(F,opp(F).pos.clone(),1.6,.55,9,0xe6c84a,.4),desc:'선 그어진 약점마다 일격이 떨어짐'}},
+ choso:{name:'쵸소',title:'피를 다루는 주술사',hp:105,spd:6.2,r:.5,build:makeChoso,keep:7,
+  atk:{range:2.4,dmg:[4,4,7],wu:.07,col:0xd8203a},
+  tal:{name:'혈탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:17,dmg:4,col:0xc0102a})},
+  s1:{name:'천혈',desc:'압축한 피를 한 줄기로 쏘아 멀리까지 꿰뚫음',cost:30,cd:5,windup:.45,active:.1,recover:.35,red:true,range:[3,30],ev:[[0,F=>beam(F,30,15)]]},
+  s2:{name:'초신성',desc:'주위에 띄운 핏방울을 사방으로 터뜨림',cost:25,cd:5,windup:.25,active:.1,recover:.3,range:[0,9],ev:[[0,F=>{shoot(F,{kind:'orb',n:8,spread:PI/4,spd:12,dmg:5,col:0xd8203a,l:1.4});radial(F,2.6,5)}]]},
+  s3:{name:'적린약진',desc:'피를 끓여 6초 동안 이동 1.35배, 위력 1.25배',cost:30,cd:14,windup:.2,active:.1,recover:.15,range:[0,99],start:F=>{F.redT=6;pop(F,'적린약진','#ff5a6a');burst(F.pos.clone().setY(1.1),0xd8203a,24,7);snd(160,.5,'sawtooth',.05,80)}},
+  dom:{name:'혈해',han:'血海',sky:['#0a0204','#2a0810','#4a0e18'],acc:0xd8203a,every:.75,tick:F=>{const O=opp(F);tele(F,O.pos.clone(),1.5,.5,8,0xd8203a,.3)},desc:'바닥이 피바다로 바뀌고 상대 발밑에서 핏바늘이 솟음'}},
+ todo:{name:'토도 아오이',title:'박수로 자리를 바꾸는 술사',hp:130,spd:6.6,r:.62,build:makeTodo,keep:2.4,bf:.05,
+  atk:{range:2.6,dmg:[6,6,10],wu:.08,col:0xffc070,rec:1.2},
+  tal:{name:'돌 던지기',cost:10,cd:.9,fire:F=>shoot(F,{kind:'rock',spd:16,dmg:6})},
+  s1:{name:'부기우기',desc:'손뼉을 쳐서 상대와 자리를 맞바꿈',cost:12,cd:1.6,windup:.08,active:.05,recover:.12,range:[2.5,25],start:F=>{clap(F);swapPos(F)}},
+  s2:{name:'맨주먹 돌진',desc:'거구로 들이받는 일격',cost:25,cd:4,windup:.3,active:.4,recover:.4,range:[3,11],start:F=>lunge(F,20),contact:14},
+  s3:{name:'헛박수',desc:'손뼉만 치고 자리는 그대로, 다음 주력을 담은 공격 두 배',cost:10,cd:3,windup:.08,active:.05,recover:.1,range:[0,6],start:F=>{clap(F);F.emp=1.6}},
+  dom:{name:'갈채의 무대',han:'喝采舞臺',sky:['#0a0806','#2a2010','#4a3818'],acc:0xffc070,every:1.1,tick:F=>{const O=opp(F),c=around(F.pos,2.2);clap(F);if(!O.remote){O.pos.copy(c)}else sendSwap(O,c);tele(F,c,1.4,.45,9,0xffc070,.4)},desc:'박수 소리마다 상대가 내 앞으로 끌려와 얻어맞음'}},
  muha:{name:'고죠 사토루',title:'무하한을 두른 술사',hp:95,spd:6.4,r:.5,build:makeMuha,keep:5,inf:true,six:true,
   atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0x9fd0ff},
   tal:{name:'청탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0x3d7bff})},
@@ -575,7 +602,7 @@ function setupFighters(){
 function resetRound(){
   clearAll();
   for(const F of S.f){Object.assign(F,{hp:F.def.hp,mp:100,state:'free',act:null,inv:0,stag:0,guard:false,dashT:0,dashCd:0,lv:null,combo:0,queued:false,pull:null,koT:0,aiParry:false});
-    F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.counterT=0;F.otT=0;F.infG=100;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);F.pos.set(0,0,F.side?-5:5);F.face=F.side?0:PI;F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
+    F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.counterT=0;F.otT=0;F.redT=0;F.infG=100;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);F.pos.set(0,0,F.side?-5:5);F.face=F.side?0:PI;F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
 }
 function startMatch(){
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(_){}
@@ -598,6 +625,7 @@ function stun(F,t){F.state='stun';F.t=t;F.act=null;F.lv=null;F.tg.visible=false;
 function hit(Aa,T,dmg,o={}){
   if(DOMTAG&&!o.domFx)o=Object.assign({},o,{domFx:true});
   if(Aa&&Aa.otT>0)dmg*=1.4;
+  if(Aa&&Aa.redT>0)dmg*=1.25;
   if(S.mode==='net'){
     if(T.remote){if(!Aa||Aa.remote||S.state!=='fight'||T.state==='ko')return false;
       sendEvt({k:'hit',dmg,o:{df:o.domFx?1:0,bf:o.bf?1:0,unb:o.unb?1:0,big:o.big?1:0,proj:o.proj?1:0,stun:o.stun||0,pull:o.pull||null}});Aa.mp=Math.min(100,Aa.mp+2);return 'sent'}
@@ -784,6 +812,18 @@ function fuga(F){const O=opp(F),amp=!!S.dom&&S.dom.owner===F,k=amp?1.2:1;
 
 function punch(F,range,dmg,big){const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0),l=d.length();burst(F.pos.clone().setY(1.1).addScaledVector(fwd(F.face),1),F.def.atk.col,5,4);snd(big?260:420,.08,'square',.04,-150);
   if(O.state!=='ko'&&l<range+O.def.r&&(l<.9||d.normalize().dot(fwd(F.face))>.2)){const r=hit(F,O,dmg,{big:!!big});if(r==='hit'||r==='sent')S.stop=Math.max(S.stop,big?.08:.03)}}
+function beam(F,len,dmg,dir){const O=opp(F);dir=dir??Math.atan2(O.pos.x-F.pos.x,O.pos.z-F.pos.z);F.face=dir;const d=fwd(dir);
+  if(S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'beam',a:{a:+dir.toFixed(3),l:len}});
+  const m=new THREE.Mesh(new THREE.BoxGeometry(.16,.16,len),basic(0xff2a44,{transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false}));
+  m.position.copy(F.pos).setY(1.1).addScaledVector(d,len/2+F.def.r);m.rotation.y=dir;scene.add(m);S.fx.push({m,mat:m.material,t:0,dur:.3});
+  for(let i=0;i<8;i++)burst(F.pos.clone().setY(1.1).addScaledVector(d,F.def.r+len*i/8),0xd8203a,2,3);snd(1700,.25,'sawtooth',.05,-1400);S.shake=Math.max(S.shake,.2);
+  if(!dmg||O.state==='ko')return;const rel=O.pos.clone().sub(F.pos).setY(0),along=rel.dot(d),side=Math.abs(rel.x*d.z-rel.z*d.x);
+  if(along>0&&along<len+O.def.r&&side<O.def.r+.55)hit(F,O,dmg,{big:true,proj:true,stun:.35})}
+function clap(F){snd(1900,.06,'square',.06,-1200);snd(900,.08,'square',.04,-500);burst(F.pos.clone().setY(1.4).addScaledVector(fwd(F.face),.5),0xffe6b0,10,6);pop(F,'짝!','#ffe6b0')}
+function sendSwap(O,c){O.pos.copy(c);if(O.netPos)O.netPos.copy(c);if(S.mode==='net')sendEvt({k:'swap',x:+c.x.toFixed(2),z:+c.z.toFixed(2)})}
+function swapPos(F){const O=opp(F);if(O.state==='ko')return;const a=F.pos.clone(),b=O.pos.clone();
+  burst(a.clone().setY(1),0xffc070,16,6);burst(b.clone().setY(1),0xffc070,16,6);F.pos.copy(b);
+  if(O.remote)sendSwap(O,a);else O.pos.copy(a);F.face=Math.atan2(O.pos.x-F.pos.x,O.pos.z-F.pos.z);S.stop=Math.max(S.stop,.05)}
 function divergent(F){if(!F.hitOnce)return;const O=opp(F);if(O.state==='ko')return;
   burst(O.pos.clone().setY(1.1),0x3d9bff,18,7);pop(F,'경!','#7fb8ff');snd(140,.25,'sine',.06,-60);hit(F,O,7,{big:true})}
 // ===== 식신 (십종영법) =====
@@ -923,6 +963,7 @@ function updateFighter(F,I,dt){
   // 무하한 게이지는 저절로 차지 않음. 깨진 뒤 쿨타임이 끝나야 가득 찬 채로 다시 생김
   if(F.def.inf&&F.infBrk>0){F.infBrk-=dt;if(F.infBrk<=0){F.infBrk=0;F.infG=100;pop(F,'무하한 재생','#9fd0ff');burst(F.pos.clone().setY(1.1),0x9fd0ff,20,6);snd(880,.3,'sine',.04,440)}}
   if(F.ampOn){F.mp=Math.max(0,F.mp-AMP.drain*zoneEff(F)*dt);if(F.mp<=0)setAmp(F,false)}
+  if(F.redT>0){F.redT-=dt;if(Math.random()<.3)burst(F.pos.clone().setY(.5+Math.random()*1.3),0xd8203a,1,2)}
   if(F.otT>0){F.otT-=dt;if(Math.random()<.2)burst(F.pos.clone().setY(1+Math.random()),0xe6c84a,1,2)}
   if(F.sdT>0){F.sdT-=dt;F.sdHit-=dt;const O2=opp(F);
     if(F.sdHit<=0&&O2.state!=='ko'&&Math.hypot(O2.pos.x-F.pos.x,O2.pos.z-F.pos.z)<2+O2.def.r){F.sdHit=.7;slashFx(F,1);hit(F,O2,4,{stun:.25})}
@@ -940,7 +981,7 @@ function updateFighter(F,I,dt){
     F.dashDir.copy(ml>.15?I.move.clone().normalize():toO.clone().normalize().negate());F.dashT=.26;F.dashCd=.55;F.inv=.32;snd(300,.12,'sine',.035,400)}
   if(F.dashT>0){F.dashT-=dt;F.pos.addScaledVector(F.dashDir,24*dt);if(Math.random()<.5)burst(F.pos.clone().setY(.8),F.side?0x5a2a2a:0x2b3566,1,1)}
   else if(F.state==='free'&&ml>.1){F.running=!!I.run&&!F.guard&&F.stag<=0&&!F.rcting&&!(F.sdT>0);
-    F.pos.addScaledVector(I.move,F.def.spd*SPD*(F.guard?.35:F.stag>0?.25:1)*(F.sdT>0?.4:1)*(F.rcting?.5:1)*(F.running?2:1)*dt);
+    F.pos.addScaledVector(I.move,F.def.spd*SPD*(F.guard?.35:F.stag>0?.25:1)*(F.sdT>0?.4:1)*(F.rcting?.5:1)*(F.running?2:1)*(F.redT>0?1.35:1)*dt);
     if(F.running&&Math.random()<.35)burst(F.pos.clone().setY(.15),0x8a8676,1,2)}
   else F.running=false;
   if(F.dashT<=0&&!F.lv&&toO.lengthSq()>.01)F.face=Math.atan2(toO.x,toO.z);
@@ -1164,6 +1205,7 @@ function updateRemote(R,dt){
   if(R.state==='ko')R.koT+=dt;if(R.tg.visible)R.tg.scale.setScalar(1.2+Math.sin(S.t*30)*.3)}
 function handleEvt(R,e){const L=S.f[S.me];
   if(e.k==='hit'){const o=e.o||{};{const r=applyHit(R,L,num(e.dmg,0,40),{domFx:!!o.df,bf:!!o.bf,unb:!!o.unb,big:!!o.big,proj:!!o.proj,stun:num(o.stun,0,2),pull:Array.isArray(o.pull)?[num(o.pull[0],-A,A),num(o.pull[1],-A,A)]:null});if(o.bf&&r==='hit')blackFlash(R,L)}}
+  else if(e.k==='swap'){if(S.state==='fight'&&L.state!=='ko'){L.pos.set(num(e.x,-A,A),0,num(e.z,-A,A));burst(L.pos.clone().setY(1),0xffc070,16,6)}}
   else if(e.k==='parried'){if(L.state!=='ko'&&S.state==='fight'){stun(L,1.2);L.mp=Math.max(0,L.mp-20);pop(R,'간파!','var(--paper)');S.stop=.12;snd(1400,.25,'sine',.06,-200)}}
   else if(e.k==='fx')netFx(R,e.n,e.a)}
 function netFx(R,n,a){if(!a||typeof a!=='object')return;
@@ -1174,6 +1216,7 @@ function netFx(R,n,a){if(!a||typeof a!=='object')return;
   else if(n==='tele')tele(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.r,.5,4,2),num(a.dur,.2,3,1),0,num(a.col,0,0xffffff,0x8a4dff)|0);
   else if(n==='wave')wave(R,num(a.spd,1,20,8),num(a.max,1,20,12),0,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)));
   else if(n==='shiki'){if(['dog','nue','ele','rabbit'].includes(a.t))for(let i=0;i<(a.t==='rabbit'?18:1);i++)summon(R,a.t,num(a.x,-EDGE,EDGE),num(a.z,-EDGE,EDGE),{white:!!a.w,i})}
+  else if(n==='beam')beam(R,num(a.l,1,40,30),0,num(a.a,-10,10));
   else if(n==='blue')blueOrb(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)));
   else if(n==='dom')openDomain(R)}
 function netEnd(msg){S.gen++;closeDomain();S.state='end';NET.ready=NET.match;
