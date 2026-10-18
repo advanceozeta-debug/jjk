@@ -364,7 +364,7 @@ const CH={
   s2:{name:'박치기',desc:'몸통으로 들이받기',cost:20,cd:4,windup:.4,active:.8,recover:.6,range:[5,14],start:F=>lunge(F,12),contact:15},
   s3:{name:'뿌리 솟기',desc:'상대 쪽으로 뿌리가 줄지어 솟음',cost:25,cd:5,windup:.45,active:.1,recover:.5,red:true,range:[0,12],ev:[[0,F=>{const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0),l=d.length();d.normalize();for(let i=1;i<=5;i++){const c=F.pos.clone().addScaledVector(d,1.5+i/5*(l+.5));clampV(c,A);tele(F,c,1.3,.4+i*.12,10,0xb07040,.8)}}]]},
   dom:{name:'서낭당',han:'城隍堂',sky:['#0c0604','#2e140c','#5a2a18'],acc:0xff7a3a,every:1.5,tick:F=>{wave(F,9,12,9);F.hp=Math.min(F.def.hp,F.hp+3)},desc:'충격파가 거듭 퍼지고 체력이 회복됨'}},
- muha:{name:'무하',title:'무하한을 두른 술사',hp:95,spd:6.4,r:.5,build:makeMuha,keep:5,inf:true,six:true,
+ muha:{name:'고죠 사토루',title:'무하한을 두른 술사',hp:95,spd:6.4,r:.5,build:makeMuha,keep:5,inf:true,six:true,
   atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0x9fd0ff},
   tal:{name:'청탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0x3d7bff})},
   s1:{name:'창',desc:'끌어당기는 점을 만들어 상대와 투사체를 빨아들임',cost:25,cd:4,windup:.2,active:.1,recover:.3,range:[2,9],ev:[[0,F=>blueOrb(F)]]},
@@ -372,12 +372,12 @@ const CH={
   s3:{name:'허식 · 자',desc:'창과 혁을 합친 관통 구체, 막을 수 없고 길 위의 투사체를 지움',cost:45,cd:10,windup:.9,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>shoot(F,{kind:'purple',spd:13,dmg:24,l:1.6,pierce:1})]]},
   dom:{name:'무량공처',han:'無量空處',sky:['#02030a','#0b1630','#2a1f4a'],acc:0x9fd0ff,every:1.4,tick:F=>hit(F,opp(F),4,{unb:true,stun:.8}),desc:'끝없는 정보가 쏟아져 상대가 거듭 멈춤'}},
 
- yeom:{name:'염귀',title:'참격과 불을 다루는 저주',hp:105,spd:6.6,r:.55,build:makeYeom,keep:3.2,bf:.03,
+ yeom:{name:'스쿠나',title:'참격과 불을 다루는 저주',hp:105,spd:6.6,r:.55,build:makeYeom,keep:3.2,bf:.03,
   atk:{range:2.5,dmg:[5,5,8],wu:.07,col:0xff4a3a},
   tal:{name:'불씨',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:16,dmg:4,col:0xff7a1a})},
   s1:{name:'해',desc:'보이지 않을 만큼 빠른 참격을 날림',cost:20,cd:2.5,windup:.12,active:.1,recover:.2,range:[2,13],ev:[[0,F=>shoot(F,{kind:'wave',spd:28,dmg:9,col:0xff3a4a,l:.7})]]},
   s2:{name:'팔',desc:'가까운 상대를 난도질, 상대 체력이 클수록 더 아픔',cost:30,cd:5,windup:.3,active:.25,recover:.35,red:true,range:[0,3.6],ev:[[0,F=>cleave(F)],[.12,F=>slashFx(F,2)]]},
-  s3:{name:'개 · 푸가',desc:'불화살을 쏘고 맞은 자리에서 폭발',cost:45,cd:10,windup:.8,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>fuga(F)]]},
+  s3:{name:'개 · 푸가',desc:'불화살을 쏘고 맞은 자리에서 폭발, 자신의 영역 안에서 쓰면 위력 2배',cost:45,cd:10,windup:.8,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>fuga(F)]]},
   dom:{name:'복마어주자',han:'伏魔御廚子',sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 펼쳐져 안에 있는 상대를 쉬지 않고 벰'}},
 };
 const IDS=Object.keys(CH);
@@ -668,8 +668,11 @@ function cleave(F){const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0),l=d.length(
 function dismantleFx(O,s=1){const c=O.pos.clone().setY(.6+Math.random()*1.3);const a=Math.random()*PI;
   const m=new THREE.Mesh(new THREE.PlaneGeometry(1.9*s,.05),basic(0xff3a4a,{transparent:true,opacity:.95,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
   m.position.copy(c);m.rotation.set(Math.random()*PI,Math.random()*PI,a);scene.add(m);S.fx.push({m,mat:m.material,t:0,dur:.18})}
-function fuga(F){const O=opp(F);shoot(F,{kind:'orb',spd:19,dmg:16,col:0xff7a1a,big:1,heavy:1,l:1.2});
-  const at=O.pos.clone();tele(F,at,2.4,.75,12,0xff7a1a,.4);banner('개','푸가',.9);snd(90,.7,'sawtooth',.07,-40)}
+function fuga(F){const O=opp(F),amp=!!S.dom&&S.dom.owner===F,k=amp?2:1;
+  shoot(F,{kind:'orb',spd:19,dmg:16*k,col:0xff7a1a,big:1,heavy:1,l:1.2});
+  const at=O.pos.clone();tele(F,at,amp?3.6:2.4,.75,12*k,0xff7a1a,amp?.9:.4);
+  banner('개',amp?'푸가 · 영역 증폭':'푸가',.9);snd(90,.7,'sawtooth',.07,-40);
+  if(amp){flash(.4);S.shake=Math.max(S.shake,.5);burst(F.pos.clone().setY(1.2),0xff7a1a,30,10);snd(50,1,'sawtooth',.08,-20)}}
 
 // ---- 결계 현현 ----
 const DOMTEX={};
