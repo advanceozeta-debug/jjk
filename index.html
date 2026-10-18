@@ -367,11 +367,12 @@ const CH={
   dom:{name:'미완성 영역',han:'未完成領域',sky:['#0a0606','#2a1410','#5a2a1a'],acc:0xff9a5a,every:.8,tick:F=>tele(F,around(opp(F).pos,.4),1.6,.5,8,0xff9a5a,.3),desc:'상대 발밑을 주력이 연달아 두들김'}},
  megumi:{name:'후시구로 메구미',title:'그림자로 식신을 부리는 술사',hp:100,spd:6.4,r:.5,build:makeMegumi,keep:5.5,
   atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0x6a7aff},
-  tal:{name:'그림자 칼날',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0x5a5aff})},
-  s1:{name:'옥견',desc:'양옆에서 쫓아가는 식신 두 마리',cost:25,cd:4,windup:.2,active:.1,recover:.3,range:[2,13],ev:[[0,F=>shoot(F,{kind:'orb',n:2,spread:.6,spd:13,dmg:7,col:0xd8dcff,homing:3,l:2.6})]]},
-  s2:{name:'탈토',desc:'토끼 떼로 주변을 덮고 다른 곳으로 빠짐',cost:20,cd:4,windup:.1,active:.25,recover:.2,range:[0,3.5],ev:[[0,F=>{radial(F,3.2,6);burst(F.pos.clone().setY(.4),0xffffff,26,7)}],[.15,F=>blink(F)]]},
-  s3:{name:'만상',desc:'상대 머리 위에서 물을 쏟아 짓누름',cost:35,cd:7,windup:.35,active:.1,recover:.4,red:true,range:[0,15],ev:[[0,F=>tele(F,opp(F).pos.clone(),2.8,.9,15,0x3a8bff,.9)]]},
-  dom:{name:'감합암예정',han:'嵌合暗翳庭',sky:['#020308','#0a1020','#15203a'],acc:0x5a6aff,every:.7,tick:F=>shadowBite(F),desc:'바닥이 그림자로 바뀌고 식신이 아무 데서나 튀어나옴'}},
+  tal:{name:'탈토',cost:15,cd:6,fire:F=>{for(let i=0;i<18;i++)summon(F,'rabbit',F.pos.x,F.pos.z,{i})}},
+  s1:{name:'옥견',desc:'흑백 두 마리 개가 그림자에서 나와 5초 동안 쫓아가 물어뜯음, 주력을 담은 공격에 맞으면 사라짐',cost:25,cd:7,windup:.2,active:.1,recover:.3,range:[0,14],ev:[[0,F=>{const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0).normalize(),p=new V3(-d.z,0,d.x);
+    for(const s of[-1,1]){const c=F.pos.clone().addScaledVector(p,s*1.3);summon(F,'dog',c.x,c.z,{white:s>0})}snd(220,.3,'sawtooth',.04,120)}]]},
+  s2:{name:'누에',desc:'그림자에서 날아오른 새가 상대 머리 위로 날아가 번개를 두르고 내리꽂음',cost:25,cd:5,windup:.2,active:.1,recover:.3,range:[2,16],ev:[[0,F=>summon(F,'nue',F.pos.x,F.pos.z,{})]]},
+  s3:{name:'만상',desc:'상대 머리 위에 코끼리를 불러 물을 쏟아 짓누름',cost:35,cd:7,windup:.35,active:.1,recover:.4,red:true,range:[0,15],ev:[[0,F=>{const c=opp(F).pos.clone();tele(F,c,2.8,.9,15,0x3a8bff,.9);summon(F,'ele',c.x,c.z,{})}]]},
+  dom:{name:'감합암예정',han:'嵌合暗翳庭',sky:['#020308','#0a1020','#15203a'],acc:0x5a6aff,every:.7,tick:F=>domShiki(F),desc:'바닥이 그림자로 바뀌고 옥견과 누에가 아무 데서나 튀어나옴'}},
  nanami:{name:'나나미 켄토',title:'칠 대 삼으로 약점을 만드는 술사',hp:110,spd:6.1,r:.5,build:makeNanami,keep:2.6,ratio:true,
   atk:{range:2.6,dmg:[5,5,7],wu:.07,col:0xe6c84a},
   tal:{name:'둔기 투척',cost:10,cd:.9,fire:F=>shoot(F,{kind:'rock',spd:15,dmg:5})},
@@ -460,7 +461,7 @@ function humanInput(F){
 }
 
 // ================= state =================
-let S={state:'select',mode:'cpu',diff:'normal',pick:['yuji','muha'],t:0,stop:0,shake:0,slow:0,intro:0,f:[],proj:[],tele:[],waves:[],fx:[],strikes:[],lines:[],blues:[],dom:null,wins:[0,0],round:1,gen:0,me:0,fp:['yuji','muha']};
+let S={state:'select',mode:'cpu',diff:'normal',pick:['yuji','muha'],t:0,stop:0,shake:0,slow:0,intro:0,f:[],proj:[],tele:[],waves:[],fx:[],strikes:[],lines:[],blues:[],shiki:[],dom:null,wins:[0,0],round:1,gen:0,me:0,fp:['yuji','muha']};
 try{const s=JSON.parse(localStorage.getItem('versus-setup')||'{}');if(s.mode&&s.mode!=='net')S.mode=s.mode;if(s.diff)S.diff=s.diff;if(Array.isArray(s.pick)&&s.pick.every(i=>CH[i]))S.pick=s.pick}catch(_){}
 let ACT=0;
 const opp=F=>S.f[1-F.side];
@@ -483,8 +484,8 @@ function makeFighter(side,id,human){
 function clearAll(){
   closeDomain();
   for(const F of S.f)if(F.sdm)F.sdm.visible=false;
-  for(const a of[S.proj,S.tele,S.waves,S.fx,S.strikes,S.blues])for(const o of a)scene.remove(o.m);for(const a of[S.lines,S.proj])for(const l of a)if(l.line)scene.remove(l.line);
-  S.blues=[];S.proj=[];S.tele=[];S.waves=[];S.fx=[];S.strikes=[];S.lines=[];
+  for(const a of[S.proj,S.tele,S.waves,S.fx,S.strikes,S.blues,S.shiki])for(const o of a)scene.remove(o.m);for(const a of[S.lines,S.proj])for(const l of a)if(l.line)scene.remove(l.line);
+  S.blues=[];S.shiki=[];S.proj=[];S.tele=[];S.waves=[];S.fx=[];S.strikes=[];S.lines=[];
 }
 function setupFighters(){
   clearAll();for(const F of S.f){scene.remove(F.m,F.sh,F.ring);if(F.sdm)scene.remove(F.sdm)}
@@ -602,6 +603,7 @@ function swingHit(F,step){slashFx(F,step);
   const O=opp(F),big=step===3,a=F.def.atk,range=a.range*(big?1.15:1),f=fwd(F.face),bf=Math.random()<bfChance(F,step);
   const d=O.pos.clone().sub(F.pos).setY(0),l=d.length();
   if(O.state!=='ko'&&l<range+O.def.r&&(l<.9||d.normalize().dot(f)>.3)){const em=F.emp>0,ratio=F.def.ratio&&step===3;if(ratio)pop(F,'7:3','#e6c84a');const r=hit(F,O,a.dmg[step-1]*(em?2:1)*(bf?2.5:1)*(ratio?1.7:1),{big:big||em||bf,bf,stun:bf?.35:0});if(bf&&(r==='hit'||r==='sent'))blackFlash(F,O);if(em){F.emp=0;pop(F,'배후 일격','var(--spirit)')}if(r==='hit'||r==='sent')S.stop=big?.09:.04}
+  for(const k of S.shiki)if(k.own!==F&&k.type!=='ele'&&Math.hypot(k.pos.x-F.pos.x,k.pos.z-F.pos.z)<range+.4)killShiki(k);
   for(const b of S.proj)if(b.own!==F&&b.kind!=='wave'&&Math.hypot(b.m.position.x-F.pos.x,b.m.position.z-F.pos.z)<range){b.l=0;burst(b.m.position,0xffffff,5,4)}
 }
 // 흑섬: 타격과 주력이 0.000001초 안에 겹칠 때 생기는 공간 왜곡. 위력은 2.5제곱.
@@ -697,7 +699,62 @@ function punch(F,range,dmg,big){const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0
   if(O.state!=='ko'&&l<range+O.def.r&&(l<.9||d.normalize().dot(fwd(F.face))>.2)){const r=hit(F,O,dmg,{big:!!big});if(r==='hit'||r==='sent')S.stop=Math.max(S.stop,big?.08:.03)}}
 function divergent(F){if(!F.hitOnce)return;const O=opp(F);if(O.state==='ko')return;
   burst(O.pos.clone().setY(1.1),0x3d9bff,18,7);pop(F,'경!','#7fb8ff');snd(140,.25,'sine',.06,-60);hit(F,O,7,{big:true})}
-function shadowBite(F){const O=opp(F),c=around(O.pos,.3);tele(F,c,1.3,.45,7,0x5a6aff,.3);burst(c.clone().setY(.2),0x05060c,10,5)}
+// ===== 식신 (십종영법) =====
+function mkDog(white){const g=new THREE.Group(),c=white?0xe8e6ee:0x14141a,m=lam(c);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.42,.42,.95),m);body.position.y=.62;g.add(body);
+  const head=new THREE.Mesh(new THREE.BoxGeometry(.36,.34,.42),m);head.position.set(0,.88,.6);g.add(head);
+  const snout=new THREE.Mesh(new THREE.BoxGeometry(.2,.16,.24),m);snout.position.set(0,.8,.88);g.add(snout);
+  for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.ConeGeometry(.08,.2,4),m);e.position.set(s*.12,1.12,.55);g.add(e);
+    const ey=glow(white?0x5a8aff:0xff4a3a,.22);ey.position.set(s*.1,.94,.82);g.add(ey)}
+  const legs=[];for(const [x,z] of[[-.15,.32],[.15,.32],[-.15,-.32],[.15,-.32]]){const l=new THREE.Mesh(new THREE.BoxGeometry(.12,.45,.12),m);l.position.set(x,.22,z);g.add(l);legs.push(l)}
+  const tail=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.4),m);tail.position.set(0,.78,-.62);tail.rotation.x=-.6;g.add(tail);g.userData.legs=legs;return g}
+function mkNue(){const g=new THREE.Group(),m=lam(0x6a6a86),w=lam(0x8a8aa8,{side:THREE.DoubleSide});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.32,10,8),m);body.scale.set(1,.8,1.5);g.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.2,10,8),lam(0xd8d4c8));head.position.set(0,.12,.48);g.add(head);
+  const beak=new THREE.Mesh(new THREE.ConeGeometry(.07,.22,6),lam(0xc9a84a));beak.rotation.x=PI/2;beak.position.set(0,.08,.68);g.add(beak);
+  const wings=[];for(const s of[-1,1]){const p=new THREE.Group();const wg=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.6),w);wg.rotation.x=-PI/2;wg.position.x=s*.8;p.add(wg);p.position.x=s*.2;g.add(p);wings.push(p)}
+  const zap=glow(0xbfe6ff,1.6);zap.visible=false;g.add(zap);g.add(glow(0x9fb4ff,1.4));g.scale.setScalar(1.7);g.userData.wings=wings;g.userData.zap=zap;return g}
+function mkEle(){const g=new THREE.Group(),m=lam(0x4a5470);
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1.3,14,10),m);body.scale.set(1,.85,1.25);g.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.8,12,10),m);head.position.set(0,.4,1.3);g.add(head);
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.18,.28,1.4,8),m);trunk.position.set(0,-.4,1.9);trunk.rotation.x=.5;g.add(trunk);
+  for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.CircleGeometry(.6,12),lam(0x3a4460,{side:THREE.DoubleSide}));e.position.set(s*.75,.5,1.1);e.rotation.y=s*1.1;g.add(e)}
+  for(const [x,z] of[[-.6,.6],[.6,.6],[-.6,-.6],[.6,-.6]]){const l=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,1,8),m);l.position.set(x,-1.1,z);g.add(l)}return g}
+function mkRabbit(){const g=new THREE.Group(),m=lam(0xf4f2f6);const b=new THREE.Mesh(new THREE.SphereGeometry(.17,8,6),m);b.position.y=.17;g.add(b);
+  const h=new THREE.Mesh(new THREE.SphereGeometry(.11,8,6),m);h.position.set(0,.3,.12);g.add(h);
+  for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.BoxGeometry(.04,.2,.03),m);e.position.set(s*.05,.46,.1);g.add(e)}return g}
+function summon(F,type,x,z,o){
+  if(S.mode==='net'&&!F.remote&&!(type==='rabbit'&&o.i))sendEvt({k:'fx',n:'shiki',a:{t:type,x:+x.toFixed(2),z:+z.toFixed(2),w:o.white?1:0,i:o.i|0}});
+  const pos=new V3(x,0,z);let m,k;
+  if(type==='dog'){m=mkDog(o.white);k={life:5,cd:.4,hp:1}}
+  else if(type==='nue'){m=mkNue();pos.y=3.5;k={life:2.2,phase:0,hp:1}}
+  else if(type==='ele'){m=mkEle();const O=opp(F);pos.set(O.pos.x,7.5,O.pos.z);k={life:1.5,hp:99}}
+  else{m=mkRabbit();const a=Math.random()*PI*2,r=.8+Math.random()*1.8;pos.x+=Math.cos(a)*r;pos.z+=Math.sin(a)*r;clampV(pos,A);k={life:2.6+Math.random()*.6,hp:1,ph:Math.random()*6}}
+  Object.assign(k,{type,m,pos,own:F,t:0});m.position.copy(pos);if(type==='dog')m.position.y=-.9;scene.add(m);S.shiki.push(k);
+  burst(new V3(x,.15,z),0x05060c,type==='rabbit'?2:14,5);if(type!=='rabbit')burst(new V3(x,.15,z),0x5a6aff,6,4)}
+function killShiki(k){if(k.dead)return;k.dead=true;scene.remove(k.m);burst(k.m.position.clone().setY(Math.max(.4,k.m.position.y)),0x05060c,12,5)}
+function updateShiki(dt){
+  for(const k of S.shiki){if(k.dead)continue;k.t+=dt;const F=k.own,O=opp(F),m=k.m;
+    if(k.type==='dog'){const d=O.pos.clone().sub(k.pos).setY(0),l=d.length()||.01;d.divideScalar(l);
+      if(l>O.def.r+.95&&O.state!=='ko')k.pos.addScaledVector(d,Math.min(l-O.def.r-.9,9.5*dt));clampV(k.pos,A);
+      m.position.set(k.pos.x,Math.min(0,-.9+k.t*5),k.pos.z);m.rotation.y=Math.atan2(d.x,d.z);
+      m.userData.legs.forEach((g,i)=>g.rotation.x=Math.sin(k.t*16+(i%2)*PI)*.6);
+      k.cd-=dt;if(l<O.def.r+1.3&&k.cd<=0&&O.state!=='ko'&&k.t>.25){k.cd=1.1;m.position.addScaledVector(d,.35);burst(O.pos.clone().setY(.9),0xf2f0f5,5,4);snd(320,.08,'sawtooth',.03,-200);hit(F,O,3,{})}}
+    else if(k.type==='nue'){const w=m.userData.wings;w[0].rotation.z=Math.sin(k.t*14)*.6;w[1].rotation.z=-Math.sin(k.t*14)*.6;
+      if(k.phase===0){const to=O.pos.clone().setY(4);k.pos.lerp(to,Math.min(1,dt*3.2));m.lookAt(to.x,4,to.z);
+        if(k.t>.9){k.phase=1;k.at=O.pos.clone();m.userData.zap.visible=true;if(!F.remote)strike(F,k.at,1.8,12);snd(1400,.2,'sawtooth',.03,-900)}}
+      else if(k.phase===1){k.pos.lerp(k.at.clone().setY(.8),Math.min(1,dt*7));m.userData.zap.scale.setScalar(1.4+Math.random());if(k.t>1.45)k.phase=2}
+      else{k.pos.y+=dt*9;k.pos.x+=dt*4}
+      m.position.copy(k.pos)}
+    else if(k.type==='ele'){const y=Math.max(3.2,7.5-k.t*9);k.pos.y=y;m.position.copy(k.pos);m.rotation.y+=dt*.6;
+      if(k.t>.35&&k.t<1)for(let i=0;i<3;i++)burst(new V3(k.pos.x+(Math.random()-.5)*2.4,y-1,k.pos.z+(Math.random()-.5)*2.4),0x5aa8ff,1,3);
+      if(k.t>1.1)m.scale.setScalar(Math.max(.01,1-(k.t-1.1)*2.5))}
+    else{const c=F.pos;k.ph+=dt*9;const a=k.ph*.35;k.pos.x+=(c.x+Math.cos(a)*1.8-k.pos.x)*dt*2;k.pos.z+=(c.z+Math.sin(a)*1.8-k.pos.z)*dt*2;
+      m.position.set(k.pos.x,Math.abs(Math.sin(k.ph))*.45,k.pos.z);m.rotation.y=a+PI/2;
+      for(const b of S.proj)if(b.l>0&&b.own!==F&&!b.pierce&&Math.hypot(b.m.position.x-k.pos.x,b.m.position.z-k.pos.z)<.95){b.l=0;killShiki(k);break}}
+    if(k.t>=k.life)killShiki(k)}
+  S.shiki=S.shiki.filter(k=>!k.dead)}
+function domShiki(F){const O=opp(F),c=around(O.pos,3.5);if(Math.random()<.6){if(S.shiki.filter(k=>k.type==='dog'&&k.own===F).length<4)summon(F,'dog',c.x,c.z,{white:Math.random()<.5})}else summon(F,'nue',c.x,c.z,{})}
 
 // ---- 결계 현현 ----
 const DOMTEX={};
@@ -802,7 +859,7 @@ function separate(){const [a,b]=S.f;if(a.state==='ko'||b.state==='ko')return;
 // ================= world update =================
 function updateWorld(dt){
   updateDomain(dt);
-  updateBlues(dt);
+  updateBlues(dt);updateShiki(dt);
   for(const b of S.proj){if(b.l<=0)continue;const T=opp(b.own);
     if(b.homing){const want=T.pos.clone().setY(1.1).sub(b.m.position).setY(0).normalize().multiplyScalar(b.v.length());b.v.lerp(want,Math.min(1,b.homing*dt));b.homing=Math.max(0,b.homing-dt*.6)}
     let sp=1;if(!b.pierce&&infOn(T)){const dx=b.m.position.x-T.pos.x,dz=b.m.position.z-T.pos.z,d=Math.hypot(dx,dz);
@@ -1017,6 +1074,7 @@ function netFx(R,n,a){if(!a||typeof a!=='object')return;
   else if(n==='strike')strike(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.r,.5,4,1.8),0);
   else if(n==='tele')tele(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.r,.5,4,2),num(a.dur,.2,3,1),0,num(a.col,0,0xffffff,0x8a4dff)|0);
   else if(n==='wave')wave(R,num(a.spd,1,20,8),num(a.max,1,20,12),0,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)));
+  else if(n==='shiki'){if(['dog','nue','ele','rabbit'].includes(a.t))for(let i=0;i<(a.t==='rabbit'?18:1);i++)summon(R,a.t,num(a.x,-EDGE,EDGE),num(a.z,-EDGE,EDGE),{white:!!a.w,i})}
   else if(n==='blue')blueOrb(R,new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)));
   else if(n==='dom')openDomain(R)}
 function netEnd(msg){S.gen++;closeDomain();S.state='end';NET.ready=NET.match;
