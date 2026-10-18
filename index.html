@@ -387,8 +387,8 @@ const cost=(F,mv)=>F.def.six?Math.ceil(mv.cost*.75):mv.cost;
 const DIFF={easy:{react:.55,guard:.35,parry:.05,dodge:.35,aggr:.45,think:.38},normal:{react:.3,guard:.6,parry:.2,dodge:.6,aggr:.65,think:.22},hard:{react:.17,guard:.8,parry:.42,dodge:.85,aggr:.85,think:.12}};
 
 // ================= input =================
-const key={},TB={};const joy={x:0,y:0,id:null,ox:0,oy:0};
-addEventListener('keydown',e=>{key[e.code]=1;if((S.state==='fight'||S.state==='intro'||S.state==='ko')&&(e.code.startsWith('Arrow')||e.code==='Space'||e.code==='Enter'||e.code==='Slash'||e.code==='Quote'||e.code==='BracketLeft'||e.code==='Tab'))e.preventDefault()});
+const key={},TB={},KP={},TBP={},MBP={};const BUF=250;const joy={x:0,y:0,id:null,ox:0,oy:0};
+addEventListener('keydown',e=>{key[e.code]=1;if(!e.repeat)KP[e.code]=performance.now();if((S.state==='fight'||S.state==='intro'||S.state==='ko')&&(e.code.startsWith('Arrow')||e.code==='Space'||e.code==='Enter'||e.code==='Slash'||e.code==='Quote'||e.code==='BracketLeft'||e.code==='Tab'))e.preventDefault()});
 addEventListener('keyup',e=>{key[e.code]=0});
 const tapT={},dashTap={};addEventListener('keydown',e=>{if(e.repeat)return;const now=performance.now();if(now-(tapT[e.code]||0)<300){dashTap[e.code]=1;tapT[e.code]=0}else tapT[e.code]=now});
 addEventListener('blur',()=>{for(const k in key)key[k]=0;for(const k in TB)TB[k]=0;mouseAtk=mouseS1=mouseDrag=false});
@@ -401,7 +401,7 @@ function joyRest(){kn.style.transform='';joyEl.classList.add('idle')}
 function joyMove(e){let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),m=joyEl.offsetWidth*.42||48;if(l>m){dx*=m/l;dy*=m/l}joy.x=dx/m;joy.y=dy/m;kn.style.transform=`translate(${dx}px,${dy}px)`}
 tc.addEventListener('pointerdown',e=>{
   const btn=e.target.closest('.btn');
-  if(btn){e.preventDefault();try{btn.setPointerCapture(e.pointerId)}catch(_){}btn.classList.add('on');TB[btn.dataset.k]=1;btn._pid=e.pointerId;
+  if(btn){e.preventDefault();try{btn.setPointerCapture(e.pointerId)}catch(_){}btn.classList.add('on');TB[btn.dataset.k]=1;TBP[btn.dataset.k]=performance.now();btn._pid=e.pointerId;
     if(btn.dataset.k==='atk'){fireP.id=e.pointerId;fireP.x=e.clientX}return}
   const r=stage.getBoundingClientRect();
   if(e.clientX-r.left<r.width*.42&&joy.id===null){const jr=joyEl.getBoundingClientRect();joy.id=e.pointerId;joy.ox=jr.left+jr.width/2;joy.oy=jr.top+jr.height/2;joyMove(e);joyEl.classList.remove('idle')}
@@ -415,7 +415,7 @@ function tcUp(e){if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;joyRest()}if
 tc.addEventListener('contextmenu',e=>e.preventDefault());
 let mouseAtk=false,mouseS1=false,mouseDrag=false;
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.button===0)mouseAtk=true;if(e.button===2)mouseS1=true;mouseDrag=true});
+cv.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.button===0){mouseAtk=true;MBP.atk=performance.now()}if(e.button===2){mouseS1=true;MBP.s1=performance.now()}mouseDrag=true});
 addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;if(e.button===0)mouseAtk=false;if(e.button===2)mouseS1=false;mouseDrag=false});
 addEventListener('pointermove',e=>{if(e.pointerType==='touch'||!mouseDrag||S.state==='select')return;nudgeCam(e.movementX*.6)});
 const KEYS={
@@ -431,10 +431,15 @@ function humanInput(F){
   const I={move:camR.clone().multiplyScalar(mx).addScaledVector(camF,-mz),press:{},guard:false,guardTap:false};
   F.prev=F.prev||{};
   const mouse=S.mode!=='2p'&&touch,mb={atk:mouseAtk,s1:mouseS1};
-  for(const b of BTN){const cur=!!(has(b)||(touch&&TB[b])||(mouse&&mb[b]));if(cur&&(!F.prev[b]||b==='atk'))I.press[b]=true;F.prev[b]=cur}
+  const now=performance.now(),can=F.stag<=0&&F.dashT<=0&&F.state!=='stun';
+  for(const b of BTN){const cur=!!(has(b)||(touch&&TB[b])||(mouse&&mb[b]));
+    const buf=map[b].some(c=>now-(KP[c]||0)<BUF)||(touch&&now-(TBP[b]||0)<BUF)||(mouse&&now-(MBP[b]||0)<BUF);
+    if((cur&&(!F.prev[b]||b==='atk'))||buf)I.press[b]=true;F.prev[b]=cur;
+    // 실제로 발동할 수 있는 순간까지 기억해 뒀다가 쓰고 지움
+    if(buf&&can&&(F.state==='free'||b==='atk'||b==='rct'||b==='sd')){for(const c of map[b])delete KP[c];if(touch)delete TBP[b];if(mouse)delete MBP[b]}}
   const DV={up:camF,down:camF.clone().negate(),left:camR.clone().negate(),right:camR},QS={qf:'up',qb:'down',ql:'left',qr:'right'};
   for(const d in DV)if(map[d].some(c=>dashTap[c])){for(const c of map[d])delete dashTap[c];I.press.dash=true;I.move.copy(DV[d])}
-  if(touch)for(const q in QS){const cur=!!TB[q];if(cur&&!F.prev[q]){I.press.dash=true;I.move.copy(DV[QS[q]])}F.prev[q]=cur}
+  if(touch)for(const q in QS){const cur=!!TB[q],buf=now-(TBP[q]||0)<BUF;if((cur&&!F.prev[q])||buf){I.press.dash=true;I.move.copy(DV[QS[q]]);delete TBP[q]}F.prev[q]=cur}
   I.guard=F.prev.guard;I.guardTap=!!I.press.guard;return I;
 }
 
