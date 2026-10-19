@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="주술 회전">
+<meta name="theme-color" content="#0d0f1c">
+<style>:root{box-sizing:border-box}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>주술 회전</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,9 +24,9 @@
 html,body{height:100%}
 [hidden]{display:none!important}
 body{background:var(--ink);color:var(--text);font-family:var(--ui);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-#app{height:100%;display:flex;flex-direction:column}
+#app{height:100%;height:var(--game-height,100%);display:flex;flex-direction:column}
 #hud{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px;font-size:12px;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px}
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px;padding-top:max(8px,env(safe-area-inset-top,0px))}
 .side{display:grid;gap:4px;min-width:0}
 .side.r{text-align:right}
 .nm{font-family:var(--display);font-size:16px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -64,6 +68,7 @@ html:fullscreen #app{height:100%}html:-webkit-full-screen #app{height:100%}
 html:fullscreen #hud{padding-top:max(8px,env(safe-area-inset-top,0px))}
 html:-webkit-full-screen #hud{padding-top:max(8px,env(safe-area-inset-top,0px))}
 #flash{position:absolute;inset:0;background:var(--paper);opacity:0;pointer-events:none}
+#graphicsNote{position:absolute;left:50%;top:35%;transform:translateX(-50%);z-index:8;max-width:80%;padding:12px 16px;background:var(--ink-2);border:1px solid var(--line);border-radius:4px;font-size:13px;text-align:center;pointer-events:none}
 #banner{position:absolute;left:0;right:0;top:20%;text-align:center;pointer-events:none;opacity:0;transition:opacity .3s}
 #banner.show{opacity:1}
 #banner h2{font-family:var(--display);font-size:clamp(32px,9vw,52px);margin:0;text-shadow:0 2px 18px #000}
@@ -206,6 +211,7 @@ body.touch .tc{display:block}
     <canvas id="cv"></canvas>
     <div id="viewTools"><button id="fullscreenBtn" type="button" aria-label="전체화면 전환" aria-pressed="false" aria-describedby="fullscreenNote">⛶ 전체화면</button><div id="fullscreenNote" role="status" hidden></div></div>
     <div id="flash"></div>
+    <div id="graphicsNote" role="status" hidden>화면을 복구하는 중이에요.</div>
     <div id="banner"><h2 id="bnH">1라운드</h2><p id="bnP"></p></div>
     <div class="pop" id="pop0"></div><div class="pop" id="pop1"></div>
     <div id="skbar"></div>
@@ -259,22 +265,35 @@ body.touch .tc{display:block}
   <div class="lay-row"><button class="go ghost" id="layReset">이 화면 기본값으로</button><button class="go" id="layDone">완료</button></div>
 </div></div>
 <script>
-// 화면 전환은 클릭에서 즉시 요청. 브라우저의 Esc·뒤로 가기로 나간 경우도 버튼에 반영.
+// iPad의 전체화면·주소창·회전 전환 중에도 유효한 높이를 유지. 재진입은 사용자 클릭에서만 요청.
 (()=>{
   const btn=document.getElementById('fullscreenBtn'),note=document.getElementById('fullscreenNote'),root=document.documentElement;
-  let busy=false;
+  const view=typeof window==='object'?window:{},nav=typeof navigator==='object'?navigator:{};
+  const ipad=/iPad/i.test(nav.userAgent||'')||((nav.platform==='MacIntel'||/Macintosh/.test(nav.userAgent||''))&&nav.maxTouchPoints>1);
+  const standalone=!!nav.standalone||!!view.matchMedia?.('(display-mode: standalone)').matches;
+  root.classList.toggle('ipad',ipad);root.classList.toggle('standalone',standalone);
+  let busy=false,wasFullscreen=false,intentionalExit=false,attempt=0,watchdog=0,lastHeight=0;
   btn.addEventListener('keydown',e=>{if(e.code==='Enter'||e.code==='Space')e.stopPropagation()});
   const current=()=>document.fullscreenElement||document.webkitFullscreenElement;
   const supported=()=>!!root&&((!!root.requestFullscreen&&document.fullscreenEnabled!==false)||(!!root.webkitRequestFullscreen&&document.webkitFullscreenEnabled!==false));
-  function syncFullscreen(){const on=!!current();btn.textContent=on?'⛶ 전체화면 해제':'⛶ 전체화면';btn.setAttribute('aria-pressed',String(on));btn.setAttribute('aria-label',on?'전체화면 해제':'전체화면 전환');btn.disabled=busy||!supported();btn.title=supported()?'게임 전체화면 전환 · Esc로 해제':'이 브라우저는 전체화면을 지원하지 않아요';}
-  btn.onclick=async()=>{if(busy||!supported())return;busy=true;btn.disabled=true;note.hidden=true;
+  function syncViewport(){const vv=view.visualViewport,h=vv&&Math.abs((vv.scale||1)-1)<.05?vv.height:view.innerHeight;
+    if(Number.isFinite(h)&&h>=120&&Math.abs(h-lastHeight)>.5){lastHeight=h;root.style.setProperty('--game-height',Math.floor(h)+'px')}}
+  function finishPending(){busy=false;if(watchdog)view.clearTimeout?.(watchdog);watchdog=0}
+  function syncFullscreen(event){if(event)finishPending();const on=!!current();
+    if(wasFullscreen&&!on&&!intentionalExit&&ipad){note.textContent='전체화면이 해제됐어요. Safari의 공유 → 홈 화면에 추가 → 웹 앱으로 열기로 실행할 수도 있어요.';note.hidden=false}
+    wasFullscreen=on;if(event&&!on)intentionalExit=false;btn.hidden=standalone&&!on;btn.textContent=on?'⛶ 전체화면 해제':'⛶ 전체화면';btn.setAttribute('aria-pressed',String(on));btn.setAttribute('aria-label',on?'전체화면 해제':'전체화면 전환');btn.disabled=busy||!supported();btn.title=supported()?'게임 전체화면 전환 · Esc로 해제':'Safari에서 열거나 홈 화면에 추가해 실행해 주세요';syncViewport();}
+  btn.onclick=async()=>{if(busy||standalone||!supported())return;const token=++attempt;busy=true;btn.disabled=true;note.hidden=true;intentionalExit=!!current();
+    watchdog=view.setTimeout?.(()=>{if(token===attempt){finishPending();syncFullscreen()}},4000)||0;
     try{if(current()){const exit=document.exitFullscreen||document.webkitExitFullscreen;if(exit)await exit.call(document)}
       else if(root.requestFullscreen&&document.fullscreenEnabled!==false)await root.requestFullscreen({navigationUI:'hide'});
       else await root.webkitRequestFullscreen();
-    }catch(_){note.textContent='전체화면을 켤 수 없어요. 브라우저에서 직접 열어 주세요.';note.hidden=false}
-    finally{busy=false;syncFullscreen()}
+    }catch(_){if(token===attempt){intentionalExit=false;note.textContent='전체화면을 켤 수 없어요. 브라우저에서 직접 열거나, Safari에서 홈 화면에 추가해 실행해 주세요.';note.hidden=false}}
+    finally{if(token===attempt){finishPending();syncFullscreen()}}
   };
-  document.addEventListener('fullscreenchange',syncFullscreen);document.addEventListener('webkitfullscreenchange',syncFullscreen);syncFullscreen();
+  document.addEventListener('fullscreenchange',syncFullscreen);document.addEventListener('webkitfullscreenchange',syncFullscreen);
+  function fullscreenFailed(){finishPending();syncFullscreen();note.textContent='전체화면 전환이 중단됐어요. 버튼으로 다시 시도하거나 Safari에서 홈 화면에 추가해 주세요.';note.hidden=false}
+  document.addEventListener('fullscreenerror',fullscreenFailed);document.addEventListener('webkitfullscreenerror',fullscreenFailed);
+  view.addEventListener?.('resize',syncViewport);view.addEventListener?.('orientationchange',syncViewport);view.visualViewport?.addEventListener('resize',syncViewport);syncFullscreen();
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -287,11 +306,17 @@ const V3=THREE.Vector3,PI=Math.PI,HALF=200,A=HALF-.7,EDGE=HALF+3,FOGN=90,FOGF=34
 
 // ================= renderer & world =================
 const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
-renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x0d0f1c);scene.fog=new THREE.Fog(0x0d0f1c,90,340);
 const cam=new THREE.PerspectiveCamera(55,1,.1,1200);let camK=1;
-function resize(){const r=stage.getBoundingClientRect();if(!r.width)return;renderer.setSize(r.width,r.height,false);cam.aspect=r.width/r.height;cam.updateProjectionMatrix();camK=r.width<r.height?1.3:1}
-new ResizeObserver(resize).observe(stage);
+let renderWidth=0,renderHeight=0,renderRatio=0,graphicsLost=false;
+function resize(force=false){const r=stage.getBoundingClientRect();if(!Number.isFinite(r.width)||!Number.isFinite(r.height)||r.width<2||r.height<2)return false;
+  const w=Math.floor(r.width),h=Math.floor(r.height),ipad=document.documentElement.classList.contains('ipad'),ratio=Math.floor(Math.min(window.devicePixelRatio||1,ipad?1.5:2,ipad?Math.sqrt(3200000/(w*h)):2)*1000)/1000;
+  if(force===true||w!==renderWidth||h!==renderHeight||ratio!==renderRatio){if(force===true||ratio!==renderRatio)renderer.setPixelRatio(ratio);renderer.setSize(w,h,false);renderWidth=w;renderHeight=h;renderRatio=ratio}
+  cam.aspect=w/h;cam.updateProjectionMatrix();camK=w<h?1.3:1;return true;
+}
+new ResizeObserver(()=>resize()).observe(stage);
+cv.addEventListener('webglcontextlost',e=>{e.preventDefault();graphicsLost=true;resetTransientControls();$('graphicsNote').textContent='화면을 복구하는 중이에요. 잠시 기다려 주세요.';$('graphicsNote').hidden=false});
+cv.addEventListener('webglcontextrestored',()=>{graphicsLost=false;resize(true);last=performance.now();$('graphicsNote').hidden=true});
 scene.add(new THREE.HemisphereLight(0x8a9ad0,0x14121e,.8));
 const moonL=new THREE.DirectionalLight(0xb8c6ff,.75);moonL.position.set(-20,30,-25);scene.add(moonL);
 const lam=(c,o={})=>new THREE.MeshLambertMaterial(Object.assign({color:c},o));
@@ -613,7 +638,7 @@ const key={},TB={},KP={},TBP={},MBP={};const BUF=250;const joy={x:0,y:0,id:null,
 addEventListener('keydown',e=>{key[e.code]=1;if(!e.repeat)KP[e.code]=performance.now();if((S.state==='fight'||S.state==='intro'||S.state==='ko')&&(e.code.startsWith('Arrow')||e.code==='Space'||e.code==='Enter'||e.code==='Slash'||e.code==='Quote'||e.code==='BracketLeft'||e.code==='Tab'))e.preventDefault()});
 addEventListener('keyup',e=>{key[e.code]=0});
 const tapT={},dashTap={};addEventListener('keydown',e=>{if(e.repeat)return;const now=performance.now();if(now-(tapT[e.code]||0)<300){dashTap[e.code]=1;tapT[e.code]=0}else tapT[e.code]=now});
-addEventListener('blur',()=>{for(const k in key)key[k]=0;for(const k in TB)TB[k]=0;for(const a of[KP,TBP,MBP])for(const k in a)delete a[k];mouseAtk=mouseS1=mouseDrag=false;for(const F of S.f)if(F.human&&!F.remote)cancelSukunaCharge(F)});
+addEventListener('blur',resetTransientControls);
 if(matchMedia('(pointer:coarse)').matches)document.body.classList.add('touch');
 addEventListener('touchstart',()=>document.body.classList.add('touch'),{once:true,passive:true});
 let camOff=0,lastLook=0;
@@ -669,6 +694,18 @@ function tcUp(e){if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;joyRest()}if
 ['pointerup','pointercancel','lostpointercapture'].forEach(t=>tc.addEventListener(t,tcUp,true));
 tc.addEventListener('contextmenu',e=>e.preventDefault());
 let mouseAtk=false,mouseS1=false,mouseDrag=false;
+function resetTransientControls(){
+  for(const k in key)key[k]=0;for(const k in TB)TB[k]=0;for(const a of[KP,TBP,MBP,tapT,dashTap])for(const k in a)delete a[k];
+  const pid=joy.id;joy.id=null;joy.x=joy.y=0;joyRest();lookId=null;fireP.id=null;layDrag=null;mouseAtk=mouseS1=mouseDrag=false;
+  for(const b of tc.querySelectorAll('.btn')){const id=b._pid;b._pid=null;b.classList.remove('on');try{if(id!=null&&b.hasPointerCapture?.(id))b.releasePointerCapture(id)}catch(_){}}
+  try{if(pid!=null&&tc.hasPointerCapture?.(pid))tc.releasePointerCapture(pid)}catch(_){}
+  for(const F of S.f)if(F.human&&!F.remote){F.prev={};F.skillQueue={};F.backSkillUntil=0;F.maxOutputReady=false;F.runLatch=false;F.guard=false;cancelSukunaCharge(F)}
+}
+function viewChanged(){resetTransientControls();resize();layApply()}
+document.addEventListener('fullscreenchange',viewChanged);document.addEventListener('webkitfullscreenchange',viewChanged);
+addEventListener('orientationchange',viewChanged);addEventListener('pageshow',viewChanged);
+document.addEventListener('visibilitychange',()=>{resetTransientControls();if(!document.hidden)resize(true)});
+for(const type of['gesturestart','gesturechange'])stage.addEventListener(type,e=>{if(S.state==='fight'&&e.cancelable)e.preventDefault()},{passive:false});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;if(e.button===0){mouseAtk=true;MBP.atk=performance.now()}if(e.button===2){mouseS1=true;MBP.s1=performance.now()}mouseDrag=true});
 addEventListener('pointerup',e=>{if(e.pointerType==='touch')return;if(e.button===0)mouseAtk=false;if(e.button===2)mouseS1=false;mouseDrag=false});
@@ -1680,7 +1717,9 @@ function hud(){
 
 let last=0;
 function loop(ts){
+  requestAnimationFrame(loop);
   let dt=Math.min(.033,(ts-last)/1000||0);last=ts;
+  if(graphicsLost||document.hidden)return;
   if(S.slow>0){S.slow-=dt;dt*=.3}
   if(S.state==='fight'){
     if(S.stop>0)S.stop-=dt;else{S.t+=dt;
@@ -1692,7 +1731,7 @@ function loop(ts){
   S.shake=Math.max(0,S.shake-dt);
   if(bannerT>0){bannerT-=dt;if(bannerT<=0)$('banner').classList.remove('show')}
   if(S.f.length){sync(dt);hud()}
-  renderer.render(scene,cam);requestAnimationFrame(loop);
+  renderer.render(scene,cam);
 }
 
 // ================= menus =================
