@@ -22,6 +22,7 @@
   color-scheme:dark;
 }
 html,body{height:100%}
+html{background:#0d0f1c}
 [hidden]{display:none!important}
 body{background:var(--ink);color:var(--text);font-family:var(--ui);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #app{height:100%;height:var(--game-height,100%);display:flex;flex-direction:column}
@@ -132,6 +133,7 @@ body.touch .tc{display:block}
 .joy i{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;background:rgba(231,228,218,.55)}
 .joy.idle{opacity:.45}
 .lpad .btn{pointer-events:auto}
+.tc>.btn:not(.cust),.lpad{zoom:var(--fit,1)}
 .tc .btn{position:absolute;border-radius:50%;border:1px solid var(--line);background:rgba(23,26,46,.62);color:var(--text);font-family:var(--ui);font-weight:900;font-size:15px;line-height:1.1;display:grid;place-items:center;padding:0 4px;word-break:keep-all;touch-action:none;-webkit-tap-highlight-color:transparent}
 .tc .btn.on{filter:brightness(1.5)}
 .tc .btn.low{opacity:.42}
@@ -661,7 +663,7 @@ addEventListener('keyup',e=>{key[e.code]=0});
 const tapT={},dashTap={};addEventListener('keydown',e=>{if(e.repeat)return;const now=performance.now();if(now-(tapT[e.code]||0)<300){dashTap[e.code]=1;tapT[e.code]=0}else tapT[e.code]=now});
 addEventListener('blur',resetTransientControls);
 if(matchMedia('(pointer:coarse)').matches)document.body.classList.add('touch');
-addEventListener('touchstart',()=>document.body.classList.add('touch'),{once:true,passive:true});
+addEventListener('touchstart',()=>{document.body.classList.add('touch');requestAnimationFrame(()=>fitControls())},{once:true,passive:true});
 let camOff=0,lastLook=0;
 function nudgeCam(dx){camOff=Math.max(-.9,Math.min(.9,camOff-dx*.006));lastLook=performance.now()}
 const tc=$('tc'),joyEl=$('joy'),kn=$('knob');let lookId=null,lookX=0;const fireP={id:null,x:0};
@@ -673,12 +675,22 @@ function layLoad(){try{return JSON.parse(localStorage.getItem(LAY_KEY)||'{}')||{
 function laySave(L){try{localStorage.setItem(LAY_KEY,JSON.stringify(L))}catch(_){}}
 function layApply(){const L=layLoad()[layMode()]||{},r=tc.getBoundingClientRect(),W=r.width||innerWidth,H=r.height||innerHeight;
   for(const id of LAY_IDS){const el=$(id);if(!el)continue;const v=L[id];
-    if(!v){el.style.left=el.style.top=el.style.right=el.style.bottom=el.style.transform=el.style.margin='';continue}
+    el.classList.toggle('cust',!!v);if(!v){el.style.left=el.style.top=el.style.right=el.style.bottom=el.style.transform=el.style.margin='';continue}
     el.style.left=(v.x*100)+'%';el.style.top=(v.y*100)+'%';el.style.right='auto';el.style.bottom='auto';el.style.margin='0';el.style.transform=`translate(-50%,-50%) scale(${v.s||1})`}
-  for(const id of LAY_PAD){const el=$(id);if(!el)continue;const v=L[id];el.style.transform=v?`translate(${v.dx*W}px,${v.dy*H}px) scale(${v.s||1})`:''}}
+  for(const id of LAY_PAD){const el=$(id);if(!el)continue;const v=L[id];el.style.transform=v?`translate(${v.dx*W/FIT}px,${v.dy*H/FIT}px) scale(${v.s||1})`:''}fitControls()}
+// ===== 화면이 작으면 버튼 묶음을 자동으로 줄임 (위로 잘리거나 서로 겹치지 않을 때까지) =====
+let FIT=1,fitBusy=false;
+function fitControls(){if(fitBusy)return;const st=$('stage').getBoundingClientRect();if(!st.height||!document.body.classList.contains('touch')||getComputedStyle(tc).display==='none')return;
+  fitBusy=true;const root=document.documentElement,els=()=>[...tc.querySelectorAll('.tc>.btn,.lpad .btn')].filter(e=>e.offsetParent&&e.getBoundingClientRect().width);
+  const bad=()=>{const R=els().map(e=>e.getBoundingClientRect()),pad=4;
+    for(const b of R)if(b.top<st.top+pad||b.left<st.left||b.right>st.right||b.bottom>st.bottom+1)return true;
+    for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const a=R[i],c=R[j];if(a.left<c.right-2&&c.left<a.right-2&&a.top<c.bottom-2&&c.top<a.bottom-2)return true}return false};
+  let f=1;root.style.setProperty('--fit','1');FIT=1;
+  while(f>.56&&bad()){f=Math.round((f-.04)*100)/100;root.style.setProperty('--fit',String(f));FIT=f}
+  fitBusy=false;if(f!==1){const L=layLoad()[layMode()]||{},r=tc.getBoundingClientRect();for(const id of LAY_PAD){const v=L[id];if(v)$(id).style.transform=`translate(${v.dx*r.width/FIT}px,${v.dy*r.height/FIT}px) scale(${v.s||1})`}}}
 let laySel=null,layDrag=null;
 function layOpen(){document.body.classList.add('editing');$('select').hidden=true;$('lay').hidden=false;laySel=null;layApply();laySync()}
-function layClose(){document.body.classList.remove('editing');$('lay').hidden=true;$('select').hidden=false;if(laySel)$(laySel).classList.remove('lay-sel');laySel=null}
+function layClose(){document.body.classList.remove('editing');requestAnimationFrame(fitControls);$('lay').hidden=true;$('select').hidden=false;if(laySel)$(laySel).classList.remove('lay-sel');laySel=null}
 function laySync(){const v=laySel&&(layLoad()[layMode()]||{})[laySel];const n=Math.round(((v&&v.s)||1)*100);$('laySize').value=n;$('layVal').textContent=n+'%';$('laySize').disabled=!laySel}
 function layPut(id,x,y,sc){const L=layLoad(),m=L[layMode()]||(L[layMode()]={}),o=m[id]||{};
   if(LAY_PAD.includes(id)){m[id]={dx:x!=null?x:(o.dx||0),dy:y!=null?y:(o.dy||0),s:sc!=null?sc:(o.s||1)};laySave(L);layApply();return}
@@ -698,7 +710,7 @@ $('layReset').onclick=()=>{const L=layLoad();delete L[layMode()];laySave(L);layA
 $('laySize').oninput=e=>{const v=+e.target.value;$('layVal').textContent=v+'%';if(laySel)layPut(laySel,null,null,v/100)};
 addEventListener('resize',layApply);layApply();
 function joyRest(){kn.style.transform='';joyEl.classList.add('idle')}
-function joyMove(e){let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),m=joyEl.offsetWidth*.42||48;if(l>m){dx*=m/l;dy*=m/l}joy.x=dx/m;joy.y=dy/m;kn.style.transform=`translate(${dx}px,${dy}px)`}
+function joyMove(e){let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),m=(joyEl.offsetWidth*.42||48)*FIT;if(l>m){dx*=m/l;dy*=m/l}joy.x=dx/m;joy.y=dy/m;kn.style.transform=`translate(${dx/FIT}px,${dy/FIT}px)`}
 tc.addEventListener('pointerdown',e=>{
   const btn=e.target.closest('.btn');
   if(btn){e.preventDefault();try{btn.setPointerCapture(e.pointerId)}catch(_){}btn.classList.add('on');TB[btn.dataset.k]=1;TBP[btn.dataset.k]=performance.now();btn._pid=e.pointerId;
@@ -832,7 +844,7 @@ function setupFighters(){
   if(S.mode==='net'){S.f=S.roster.map((r,i)=>makeFighter(r.team,r.ch,i===S.me));S.f.forEach((F,i)=>{if(i!==S.me)F.remote=true})}
   else S.f=[makeFighter(0,S.fp[0],true),makeFighter(1,S.fp[1],S.mode==='2p')];
   S.f.forEach((F,i)=>{F.slot=i;F.touch=S.mode==='net'?!F.remote:F.side===0});
-  hudNames();addTags();$('bTgt').classList.toggle('solo',S.f.filter(x=>x.side!==S.f[S.me].side).length<2);
+  hudNames();addTags();$('bTgt').classList.toggle('solo',S.f.filter(x=>x.side!==S.f[S.me].side).length<2);requestAnimationFrame(fitControls);
   const d=S.f[S.me].def;
   {const keys=S.mode==='2p'?(S.me||0)===0?{s1:'T',s2:'Y',s3:'Q',ult:'E',rct:'Z',sd:'X',amp:'C',brain:'B'}:{}:{s1:'Z',s2:'X',s3:'V',ult:'F',rct:'R',sd:'G',amp:'T',brain:'Y'};
    $('skbar').innerHTML=['s1','s2','s3','ult','rct','sd','amp','brain'].map(k=>{const mv=MV(S.f[S.me],k);return `<div class="skc${k==='ult'?' u':k==='rct'||k==='sd'||k==='amp'||k==='brain'?' c':''}" id="sk-${k}"><kbd>${keys[k]||''}</kbd><b>${k==='ult'?(d.ultMv?d.ultMv.name:d.dom.name):mv.name}</b><span>${k==='amp'?'주력 '+cost(S.f[S.me],mv)+' · 초당 '+ampDrain(S.f[S.me]):k==='rct'?'초당 주력 '+cost(S.f[S.me],mv):'주력 '+cost(S.f[S.me],mv)+(mv.cd?' · '+mv.cd+'초':'')}</span></div>`}).join('')}$('bUlt').textContent=d.ultMv?d.ultMv.name:'영역 전개';$('bS1').textContent=d.s1.name;$('bS2').textContent=d.s2.name;$('bS3').textContent=d.s3.name;
