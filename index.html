@@ -622,7 +622,7 @@ const CH={
  toji:{name:'후시구로 토우지',title:'주력이 없는 술사 살해자',hp:125,noCE:true,noBF:true,spd:8,r:.55,build:makeToji,keep:2.6,meleeMul:1.35,
   atk:{range:2.7,dmg:[6,6,10],wu:.05,col:0xd0d0d8},
   tal:{name:'단검 투척',cost:0,cd:1.1,fire:F=>shoot(F,{kind:'orb',spd:30,dmg:5,col:0xc8ccd6})},
-  s1:{name:'천역모',desc:'술식을 무효로 하는 단검으로 찌르며 돌진 · 피해 15 · 무하한을 뚫고 깨뜨리며 간이 영역·영역전연을 지움 · 아래 입력과 함께 쓰면 투척',cost:0,cd:4,windup:.2,active:.35,recover:.35,range:[3,12],nullify:true,start:F=>lunge(F,24),contact:15},
+  s1:{name:'천역모',desc:'술식을 무효로 하는 단검으로 찌르며 돌진 · 피해 15 · 맞은 상대의 술식을 전부 강제 해제(무하한·간이 영역·영역전연·영역·환수호박·대박·강화 상태·시전 중인 술식·식신, 반전술식 2초 봉인) · 아래 입력과 함께 쓰면 투척',cost:0,cd:4,windup:.2,active:.35,recover:.35,range:[3,12],nullify:true,start:F=>lunge(F,24),contact:15},
   s2:{name:'유운',desc:'삼절곤으로 세 번 후려침 · 피해 7·7·13에 완력 배율 1.35',cost:0,cd:4,windup:.12,active:.42,recover:.3,range:[0,3.4],ev:[[0,F=>punch(F,3.2,7)],[.14,F=>punch(F,3.2,7)],[.28,F=>punch(F,3.4,13,true)]]},
   s3:{name:'만리쇄',desc:'끝없이 늘어나는 사슬을 던져 맞은 상대를 끌어오고 묶음 · 피해 8 · 사거리 약 35m',cost:0,cd:6,windup:.2,active:.1,recover:.3,range:[5,34],ev:[[0,F=>shoot(F,{kind:'chain',spd:32,dmg:8,l:1.1})]]},
   ultMv:{kind:'ult',key:'ult',name:'기척 소멸',desc:'6초 동안 모습과 기척을 지움 · CPU가 놓치고 유도 공격이 따라오지 않음 · 그동안 첫 타격 피해 1.8배',cost:0,cd:18,windup:.1,active:.1,recover:.1,start:F=>startStealth(F)},
@@ -665,7 +665,7 @@ const FUSION={life:10,hp:65,speed:10.5,bite:{damage:8,range:2.7,cd:.95,wind:.18}
 const MEGUMI_MAX={s1:Object.assign({},CH.megumi.s1,{name:'감합명수 상악',desc:'옥견 혼·오로치·가마·만상을 합친 식신 · 10초간 추격 물기·뱀 공격·혀 속박·물 충격파 · 식신 체력 65',cost:55,cd:14,windup:.65,recover:.4,red:true,maxOutput:true,range:[0,18],ev:[[0,F=>summon(F,'fusion',F.pos.x,F.pos.z,{})]]})};
 const KASHIMO_MAX={s1:Object.assign({},CH.kashimo.s1,{name:'방전 · 주위',desc:'몸에서 사방으로 방전 · 반경 7m 안의 모든 적 · 피해 10+전하당 3 · 막을 수 없음 · 전하 소모',cost:35,maxOutput:true,windup:.3,range:[0,7],ev:[[0,F=>dischargeAround(F)]]})};
 const HAKARI_MAX={s1:Object.assign({},CH.hakari.s1,{name:'셔터 연쇄',desc:'상대 위치에 셔터를 세 번 잇달아 내리침 · 한 번에 피해 9',cost:32,maxOutput:true,windup:.3,active:.5,ev:[[0,F=>shutter(F,opp(F).pos.clone(),9)],[.22,F=>shutter(F,opp(F).pos.clone(),9)],[.44,F=>shutter(F,opp(F).pos.clone(),9)]]})};
-const TOJI_MAX={s1:Object.assign({},CH.toji.s1,{name:'천역모 투척',desc:'천역모를 던짐 · 피해 14 · 맞은 상대의 무하한·간이 영역·영역전연을 무효화',maxOutput:true,windup:.25,active:.1,range:[3,24],start:null,contact:0,ev:[[0,F=>shoot(F,{kind:'orb',spd:30,dmg:14,col:0xb08850,nullify:1,heavy:1})]]})};
+const TOJI_MAX={s1:Object.assign({},CH.toji.s1,{name:'천역모 투척',desc:'천역모를 던짐 · 피해 14 · 맞은 상대의 술식을 전부 강제 해제',maxOutput:true,windup:.25,active:.1,range:[3,24],start:null,contact:0,ev:[[0,F=>shoot(F,{kind:'orb',spd:30,dmg:14,col:0xb08850,nullify:1,heavy:1})]]})};
 const MAX_SKILLS={muha:GOJO_MAX,yeom:SUKUNA_MAX,choso:CHOSO_MAX,megumi:MEGUMI_MAX,kashimo:KASHIMO_MAX,hakari:HAKARI_MAX,toji:TOJI_MAX};
 const skillMove=(F,k,max=false)=>max&&MAX_SKILLS[F.id]?.[k]||F.def[k];
 const WORLD_CUT={hold:1.4,damage:54,speed:36,range:40,width:1.9};
@@ -861,7 +861,7 @@ const teamName=w=>{const m=S.f.filter(x=>x.side===w);return m.length===1?m[0].de
 function resetRound(){
   clearAll();
   for(const F of S.f){Object.assign(F,{hp:F.def.hp,mp:MPX(F),state:'free',act:null,inv:0,stag:0,guard:false,dashT:0,dashCd:0,lv:null,combo:0,queued:false,pull:null,koT:0,aiParry:false,moveAmt:0,sukunaHits:0,sukunaPending:{},bfPending:{},fugaPop:-9,purpleUsed:0,purpleSeen:0,purplePop:-9});
-    F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.chgN=0;F.chgT=0;F.amberT=0;F.amberUsed=false;F.wreckT=0;F.jackpotT=0;F.reserve=0;F.stealthT=0;F.ghostA=1;F.skillQueue={};F.backSkillUntil=0;F.maxOutputReady=false;F.counterT=0;F.otT=0;F.redT=0;F.burnT=0;F.psT=0;F.psN=0;F.bloodN=0;F.bloodT=0;F.bloodId=0;F.bloodVersion=0;F.bloodCast=0;F.bloodCastSeen=0;F.bloodPop=-9;F.fusionSeq=0;F.fusionGone=0;F.infG=INF_MAX;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);{const mates=S.f.filter(x=>x.side===F.side),k=mates.indexOf(F);F.pos.set((k-(mates.length-1)/2)*3.2,0,F.side?-5:5)}F.face=F.side?0:PI;F.state='free';F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
+    F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.rctBlockT=0;F.chgN=0;F.chgT=0;F.amberT=0;F.amberUsed=false;F.wreckT=0;F.jackpotT=0;F.reserve=0;F.stealthT=0;F.ghostA=1;F.skillQueue={};F.backSkillUntil=0;F.maxOutputReady=false;F.counterT=0;F.otT=0;F.redT=0;F.burnT=0;F.psT=0;F.psN=0;F.bloodN=0;F.bloodT=0;F.bloodId=0;F.bloodVersion=0;F.bloodCast=0;F.bloodCastSeen=0;F.bloodPop=-9;F.fusionSeq=0;F.fusionGone=0;F.infG=INF_MAX;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);{const mates=S.f.filter(x=>x.side===F.side),k=mates.indexOf(F);F.pos.set((k-(mates.length-1)/2)*3.2,0,F.side?-5:5)}F.face=F.side?0:PI;F.state='free';F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
 }
 function startMatch(){
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(_){}
@@ -886,6 +886,25 @@ function poison(T){if(T.def.noPoison){if(!T.psPop||S.t-T.psPop>2){T.psPop=S.t;po
 function bloodMark(F,T){if(F?.id!=='choso'||!T||T.side===F.side||T.state==='ko')return;
   const before=T.bloodT>0?T.bloodN:0;T.bloodN=Math.min(BLOOD_MARK.max,before+1);T.bloodT=BLOOD_MARK.dur;
   if(T.bloodN>before)pop(T,'피 묻음 '+T.bloodN+'/'+BLOOD_MARK.max,'#ed4561')}
+// 천역모: 닿은 상대의 술식을 전부 강제로 끊음. 맞는 사람의 기기에서 처리하고, 다른 기기에는 결계·식신 정리를 알림
+function dispelAll(T){const x=[];
+  if(T.def.inf&&!(T.infBrk>0)){T.infG=0;T.infBrk=INF_CD;x.push('무하한')}
+  if(T.sdT>0){T.sdT=0;if(T.sdm)T.sdm.visible=false;x.push('간이 영역')}
+  if(T.ampOn){setAmp(T,false);x.push('영역전연')}
+  const d=domOf(T);if(d){closeDomain(d);x.push('영역')}
+  if(T.amberT>0){endAmber(T);x.push('환수호박')}
+  if(T.jackpotT>0){T.jackpotT=0;x.push('대박')}
+  if(T.otT>0){T.otT=0;x.push('시간 외 노동')}
+  if(T.redT>0){T.redT=0;x.push('적린약진')}
+  if(T.rcting||T.def.inf||!T.def.noCE){if(T.rcting)x.push('반전술식');T.rctBlockT=2;T.rcting=false}
+  if(T.state==='act'&&T.act&&T.act.mv.kind!=='atk'){T.act=null;T.state='free';T.tg.visible=false;T.lv=null;T.queued=false;x.push('시전')}
+  if(dispelSummons(T))x.push('식신·술식체');
+  if(S.mode==='net'&&!T.remote)sendEvt({k:'fx',n:'dispel',a:{}});
+  burst(T.pos.clone().setY(1.1),0xb08850,24,7);snd(160,.3,'square',.06,-80);snd(2200,.12,'square',.03,-1800);
+  pop(T,x.length?'천역모 · '+x.join('·')+' 해제':'천역모','#d8b070')}
+function dispelSummons(T){let n=0;for(const k of S.shiki)if(!k.dead&&k.own===T){killShiki(k);n++}
+  for(const u of S.blues)if(!u.done&&u.own===T){u.done=true;scene.remove(u.m);n++}return n}
+function dispelRemote(R){const d=domOf(R);if(d)closeDomain(d,true);dispelSummons(R);burst(R.pos.clone().setY(1.1),0xb08850,24,7);snd(160,.3,'square',.06,-80)}
 function stun(F,t){F.state='stun';F.t=t;F.act=null;F.lv=null;F.tg.visible=false;F.guard=false;F.queued=false}
 // 해 계열 = 1, 대상의 몸을 베는 팔 = 2. 둘 다 실제 적중한 뒤 해당 라운드 동안 푸가 개방.
 const fugaReady=F=>F.id!=='yeom'||(F.sukunaHits&3)===3;
@@ -912,9 +931,7 @@ function applyHit(Aa,T,dmg,o={}){
   // 천여주박: 주력이 없어 영역의 필중이 토우지를 인식하지 못함 (결계 공격은 막거나 피할 수 있음)
   if(T.def.noCE&&o.domFx&&o.unb)o=Object.assign({},o,{unb:false});
   // 천역모: 닿은 술식을 무효화
-  if(o.nullify){let x=false;if(T.def.inf&&!(T.infBrk>0)){T.infG=0;T.infBrk=INF_CD;x=true;pop(T,'무하한 무효화','#ff8a7a')}
-    if(T.sdT>0){T.sdT=0;if(T.sdm)T.sdm.visible=false;x=true;pop(T,'간이 영역 무효화','#e7e4da')}if(T.ampOn){setAmp(T,false);x=true}
-    if(x){burst(T.pos.clone().setY(1.1),0xb08850,16,6);snd(160,.25,'square',.05,-80)}}
+  if(o.nullify)dispelAll(T);
   if(o.domFx&&T.sdT>0){sdDamage(T,dmg*.5);if(!T.sdPop||S.t-T.sdPop>.6){T.sdPop=S.t;pop(T,'간이 영역','#e7e4da')}burst(T.pos.clone().setY(.6),0xe7e4da,6,4);snd(900,.06,'triangle',.03,-300);return 'block'}
   // 영역 안: 전개한 사람의 공격은 전부 필중. 간이 영역이 켜져 있으면 필중만 사라지고 공격은 그대로 들어옴
   if(Aa&&sureHit(Aa)&&!T.def.noCE){if(T.sdT>0){if(o.unb){o=Object.assign({},o,{unb:false});if(!T.sdPop||S.t-T.sdPop>.8){T.sdPop=S.t;pop(T,'필중 무효','#e7e4da')}}}else o=Object.assign({},o,{unb:true})}
@@ -1665,7 +1682,8 @@ function aiInput(F,dt){
 function updateFighter(F,I,dt){
   if(F.state==='ko'){F.koT+=dt;return}
   if(enemyDom(F)&&!domOf(F)&&!(F.sdT>0)&&!F.def.noCE)dt*=.55; // 토우지는 결계가 인식하지 못해 느려지지 않음
-  F.rcting=!!I.rct&&F.mp>1&&F.hp<F.def.hp&&!F.def.noRCT&&!F.def.noCE;
+  if(F.rctBlockT>0)F.rctBlockT-=dt;
+  F.rcting=!!I.rct&&F.mp>1&&F.hp<F.def.hp&&!F.def.noRCT&&!F.def.noCE&&!(F.rctBlockT>0);
   if(F.rcting){F.mp=Math.max(0,F.mp-RCT.cost*costMul(F)*zoneEff(F)*dt);F.hp=Math.min(F.def.hp,F.hp+F.def.hp*RCT.rate*F.rctOut*zoneRct(F)*dt);F.rctOut=Math.max(RCT.min,F.rctOut-RCT.fade*dt);
     if(Math.random()<.35)burst(F.pos.clone().setY(.4+Math.random()*1.5),0xb8ffd8,1,2);if(!F.rcSnd||S.t-F.rcSnd>.5){F.rcSnd=S.t;snd(660,.4,'sine',.025,220)}}
   else F.mp=Math.min(MPX(F),F.mp+(S.doms.length?0:4*(F.def.six?1.25:1))*dt);
@@ -2030,6 +2048,7 @@ function netFx(R,n,a){if(!a||typeof a!=='object')return;
   else if(n==='fusionGone'&&R.id==='megumi'&&a.r===S.round&&Number.isInteger(a.id)){R.fusionGone=Math.max(R.fusionGone,num(a.id,0,1e9));for(const k of S.shiki)if(!k.dead&&k.own===R&&k.type==='fusion'&&k.netId<=R.fusionGone)killShiki(k)}
   else if(n==='fusionAttack'&&R.id==='megumi'&&a.r===S.round&&['bite','snake','tongue','water'].includes(a.kind)){const k=S.shiki.find(k=>!k.dead&&k.own===R&&k.type==='fusion'&&k.netId===a.id);if(k)fusionAttackFx(k,a.kind,new V3(num(a.x,-A,A),0,num(a.z,-A,A)))}
   else if(n==='shiki'){if(['dog','nue','ele','rabbit'].includes(a.t))for(let i=0;i<(a.t==='rabbit'?18:1);i++)summon(R,a.t,num(a.x,-EDGE,EDGE),num(a.z,-EDGE,EDGE),{white:!!a.w,i})}
+  else if(n==='dispel')dispelRemote(R);
   else if(n==='bolt')boltFx(new V3(num(a.x1,-EDGE,EDGE),num(a.y1,0,30),num(a.z1,-EDGE,EDGE)),new V3(num(a.x2,-EDGE,EDGE),1.1,num(a.z2,-EDGE,EDGE)),false);
   else if(n==='shutter')shutterFx(new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.a,-10,10));
   else if(n==='amber'&&R.id==='kashimo')amberFx(R);
