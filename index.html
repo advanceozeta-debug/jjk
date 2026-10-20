@@ -575,7 +575,7 @@ const CH={
   s1:{name:'해',desc:'보이지 않을 만큼 빠른 참격을 날림',cost:20,cd:2.5,windup:.12,active:.1,recover:.2,range:[2,13],ev:[[0,F=>shoot(F,{kind:'wave',spd:28,dmg:9,col:0xff3a4a,l:.7,su:1})]]},
   s2:{name:'팔',desc:'6m 안의 한 상대를 지정해 몸에 참격 6연타 · 상대 최대 체력·최대 주력에 비례해 피해 증가',cost:30,cd:5,windup:.3,active:.6,recover:.35,red:true,targetCleave:true,range:[0,6],ev:[[0,F=>cleave(F)]]},
   s3:{name:'개 · 푸가',desc:'같은 라운드에 해 계열과 팔을 모두 적중시키면 개방 · 불화살과 폭발, 자신의 영역 안에서는 위력 120%',cost:45,cd:10,windup:.8,active:.1,recover:.5,red:true,range:[3,14],ev:[[0,F=>fuga(F)]]},
-  dom:{name:'복마어주자',han:'伏魔御廚子',noBarrier:true,sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 반지름 200m로 펼쳐져 상대를 쉬지 않고 벰, 범위 내 모든 적을 베며 다른 결계의 바깥을 베어 진입 가능한 구멍을 만듦'}},
+  dom:{name:'복마어주자',han:'伏魔御廚子',noBarrier:true,sky:['#0a0203','#3a0a0c','#6a1a14'],acc:0xff3a4a,every:.5,tick:F=>{const O=opp(F);hit(F,O,2.5,{unb:true});dismantleFx(O)},desc:'결계 없이 반지름 200m로 펼쳐져 상대를 쉬지 않고 벰, 범위 내 모든 적을 베며 범위에 겹치는 모든 결계형 영역을 통째로 파괴'}},
  kashimo:{name:'카시모 하지메',title:'전기를 띤 주력의 술사',hp:105,elec:true,noRCT:true,spd:6.9,r:.5,build:makeKashimo,keep:3,bf:.05,meleeMul:1.1,
   atk:{range:2.9,dmg:[5,5,8],wu:.07,col:0x8fdcff},
   tal:{name:'전격탄',cost:8,cd:.7,fire:F=>shoot(F,{kind:'orb',spd:24,dmg:3,col:0x8fdcff})},
@@ -1728,7 +1728,7 @@ function domainView(){const me=S.f[S.me],space=spaceOf(me),inside=roomDomain(spa
   el.hidden=!(inside||outside||open)||S.state==='select';
   let status='';if(inside){const holes=inside.hp.filter(n=>n<=0).length;status='영역 내부 · '+inside.owner.def.dom.name+' · '+Math.max(0,Math.ceil(inside.dur-inside.t))+'초 · '+(holes?'빛나는 구멍으로 탈출 가능':'결계가 닫혀 있음')}
   else if(outside){const hp=outside.hp[domainSector(outside,me.pos)];status='결계 바깥 · '+(hp<=0?'빛나는 구멍으로 진입 가능':'결계를 공격해 진입 · 가까운 부분 내구도 '+Math.ceil(hp)+'/'+DOMAIN.wallHP)}
-  else if(open)status='복마어주자 · 결계 없음 · 범위 안의 모든 적에게 참격';if(el.textContent!==status)el.textContent=status;
+  else if(open)status='복마어주자 · 범위 전체 참격 · 모든 결계형 영역 파괴';if(el.textContent!==status)el.textContent=status;
 }
 function domFog(d){scene.fog.color.setHex(!d?0x0d0f1c:d.open?0x1a0606:0x0a0814);scene.fog.near=!d?FOGN:d.open?60:35;scene.fog.far=!d?FOGF:d.open?480:95}
 function disposeDomain(d){for(const g of[d.g,d.shell,d.innerPortals])if(g){scene.remove(g);const geos=new Set(),mats=new Set();g.traverse(o=>{if(o.geometry)geos.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material])mats.add(m)});for(const geo of geos)geo.dispose?.();for(const mat of mats)mat.dispose?.()}}
@@ -1748,7 +1748,15 @@ function slashAt(x,y,z,len){const q=SLASHP[slashIdx++%SLASHP.length];objectLayer
   q.m.scale.set(len,1+Math.random(),1);q.m.material.color.setHex(Math.random()<.25?0xffffff:0xff3a4a);q.m.material.opacity=1;q.m.visible=true;q.t=0;q.v=null;q.dur=.12+Math.random()*.12;return q}
 function updateSlashes(dt){for(const q of SLASHP){if(!q.m.visible)continue;q.t+=dt;if(q.v)q.m.position.addScaledVector(q.v,dt);q.m.material.opacity=Math.max(0,1-q.t/q.dur);q.m.scale.x*=1+dt*(q.v ? .5 : 4);if(q.t>=q.dur)q.m.visible=false}}
 function clashPower(F){return .5*F.hp/F.def.hp+.5*F.mp/MPX(F)}
-function updateDomain(dt){updateSlashes(dt);
+// 복마어주자의 광역 참격은 범위에 겹치는 모든 결계형 영역을 통째로 붕괴시킴.
+// 모든 기기에서 같은 열린 영역을 기준으로 처리하고, 각 결계 소유자가 domainEnd를 알림.
+function shatterDomainsInShrine(){let count=0;
+  for(const shrine of S.doms){if(!shrine.open||shrine.owner.id!=='yeom'||shrine.owner.state==='ko'||shrine.t>=shrine.dur)continue;
+    for(const wall of S.doms){if(wall.open||wall.breakT>0||Math.hypot(wall.center.x-shrine.center.x,wall.center.z-shrine.center.z)>shrine.radius+wall.radius)continue;
+      wall.breakT=.2;count++;inDrawSpace('',()=>{for(let i=0;i<8;i++){const p=domainPoint(wall,i*3);slashAt(p.x,1+i%3,p.z,4);burst(p.setY(2),0xff3a4a,3,7)}})}}
+  if(count){banner('영역 파괴','복마어주자 · 범위 안의 모든 결계 붕괴',1.6);S.shake=Math.max(S.shake,.45)}
+}
+function updateDomain(dt){updateSlashes(dt);shatterDomainsInShrine();
   const C=S.clash;
   if(C){for(const d of[C.a,C.b])d.owner.mp=Math.max(0,d.owner.mp-3*dt); // 결계를 버티는 데 주력이 계속 듦
     C.v+=(clashPower(C.a.owner)-clashPower(C.b.owner))*.6*dt;
@@ -1767,7 +1775,7 @@ function updateDomain(dt){updateSlashes(dt);
     d.orbs.forEach((m,i)=>{const an=i/12*PI*2+d.t*.4;m.position.set(Math.cos(an)*9,3+Math.sin(d.t*2+i)*.4,Math.sin(an)*9)});
     d.fire-=dt;if(d.t>.6&&d.t<d.dur-.5&&!(d.breakT>0)&&d.fire<=0&&!d.owner.remote){d.fire=d.owner.def.dom.every*(inClash(d)?2:1);
       if(!inClash(d)){DOMTAG=true;DOMAIN_TICK=d;try{for(const T of domainTargets(d)){DOMAIN_TARGET=T;inDrawSpace(spaceOf(T),()=>d.owner.def.dom.tick(d.owner))}}finally{DOMTAG=false;DOMAIN_TARGET=null;DOMAIN_TICK=null}}
-      if(d.open)for(const wall of S.doms){if(wall.open||Math.hypot(wall.center.x-d.center.x,wall.center.z-d.center.z)>d.radius+wall.radius)continue;const i=domainSector(wall,d.center);for(const off of[-1,0,1])wallStrike(wall,d.owner,(i+off+DOMAIN.sectors)%DOMAIN.sectors,12,false,true)}}
+      }
     if(d.t>=d.dur)closeDomain(d)}
   clashHud()}
 function clashHud(){const el=$('clash');if(!el)return;const C=S.clash;el.hidden=!C;if(!C)return;
@@ -2015,7 +2023,7 @@ function loop(ts){
 
 // ================= menus =================
 function seg(id,val,on){document.querySelectorAll('#'+id+' button').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.v===val));b.onclick=()=>on(b.dataset.v)})}
-const COMMON='공통 · <b>흑섬</b> 모든 캐릭터의 근접 물리 공격(기본 공격·주먹·발차기·돌진 타격)이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · 유지와 토도가 같은 팀이면 두 사람의 흑섬 확률 +7%p · 흑섬 뒤 6초는 <b>존</b>: 주력 소모 25~40% 감소, 반전술식 회복 1.5~2배 · <b>결계</b> 쓰고 나면 술식이 타버려 20초 동안 술식 불가 → <b>뇌 파괴</b>(주력 35)로 뇌를 부수고 반전술식으로 고쳐 바로 되살림 · 결계를 닫는 영역끼리는 <b>줄다리기</b>(체력·주력이 많은 쪽이 밀어붙임), 결계형은 선택한 적 한 명만 내부 공간으로 데려감 · 바깥에서는 검은 구로 보이고 같은 부분을 공격해 내구도 24를 깎으면 구멍으로 양방향 출입 가능 · 복마어주자는 결계 없이 범위 내 모든 적을 베며 다른 결계의 바깥 부분도 베어 구멍을 냄, 결계 없는 영역끼리는 공존 · <b>영역전연</b> 켜 둔 동안 근접 공격이 무하한을 뚫음, 초당 주력 8(고죠 0.48), 대신 술식을 쓰면 풀림 · <b>막기</b> 누르고 있는 동안만, 누른 직후 맞으면 간파 · <b>반전술식</b> 누르고 있는 동안 주력을 써서 계속 회복(맞는 중·기절 중에도), 회복 중엔 느려짐, 쓸수록 출력이 떨어지고(최저 25%) 흑섬을 터뜨리면 출력과 주력을 되찾음 · <b>결계</b> 펼친 사람의 공격은 전부 필중 · <b>간이 영역</b> 언제든 4초, 상대 결계 효과(시전 충격·반복 공격)를 막고 전개한 사람의 필중을 지움(직접 공격은 막아야 함), 들어오는 상대를 자동으로 벰, 피해 25를 받으면 깨짐';
+const COMMON='공통 · <b>흑섬</b> 모든 캐릭터의 근접 물리 공격(기본 공격·주먹·발차기·돌진 타격)이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · 유지와 토도가 같은 팀이면 두 사람의 흑섬 확률 +7%p · 흑섬 뒤 6초는 <b>존</b>: 주력 소모 25~40% 감소, 반전술식 회복 1.5~2배 · <b>결계</b> 쓰고 나면 술식이 타버려 20초 동안 술식 불가 → <b>뇌 파괴</b>(주력 35)로 뇌를 부수고 반전술식으로 고쳐 바로 되살림 · 결계를 닫는 영역끼리는 <b>줄다리기</b>(체력·주력이 많은 쪽이 밀어붙임), 결계형은 선택한 적 한 명만 내부 공간으로 데려감 · 바깥에서는 검은 구로 보이고 같은 부분을 공격해 내구도 24를 깎으면 구멍으로 양방향 출입 가능 · 복마어주자는 결계 없이 범위 내 모든 적을 베며 범위에 겹치는 모든 결계형 영역을 통째로 파괴, 결계 없는 영역끼리는 공존 · <b>영역전연</b> 켜 둔 동안 근접 공격이 무하한을 뚫음, 초당 주력 8(고죠 0.48), 대신 술식을 쓰면 풀림 · <b>막기</b> 누르고 있는 동안만, 누른 직후 맞으면 간파 · <b>반전술식</b> 누르고 있는 동안 주력을 써서 계속 회복(맞는 중·기절 중에도), 회복 중엔 느려짐, 쓸수록 출력이 떨어지고(최저 25%) 흑섬을 터뜨리면 출력과 주력을 되찾음 · <b>결계</b> 펼친 사람의 공격은 전부 필중 · <b>간이 영역</b> 언제든 4초, 상대 결계 효과(시전 충격·반복 공격)를 막고 전개한 사람의 필중을 지움(직접 공격은 막아야 함), 들어오는 상대를 자동으로 벰, 피해 25를 받으면 깨짐';
 function keysText(){let t=keysText0();const c=ctrlNow(),i=t.indexOf('<br>폰:');if(i>=0)t=c==='pc'?t.slice(0,i):'<b>'+CTRL_NAME[c]+'</b> '+t.slice(i+6)+(S.f.length>2||S.mode==='net'?' · 적이 둘 이상이면 <b>대상 전환</b> 버튼으로 노릴 적을 바꿔요.':'');return t+'<br><span style="color:var(--dim)">'+COMMON+'</span>'}
 function keysText0(){
   if(S.mode==='net')return '<kbd>WASD</kbd> 이동 · 이동 키 두 번 톡 또는 <kbd>Space</kbd> · 대시 · 좌클릭·<kbd>[</kbd>·<kbd>C</kbd> 주력을 담은 공격 (누르고 있으면 연속) · 우클릭·<kbd>Z</kbd> 비술1 · <kbd>X</kbd> 비술2 · <kbd>V</kbd> 비술3 · <kbd>F</kbd> 결계 · <kbd>R</kbd> 반전술식 · <kbd>G</kbd> 간이 영역 · <kbd>T</kbd> 영역전연 · <kbd>Y</kbd> 뇌 파괴 · <kbd>Shift</kbd>·<kbd>K</kbd> 막기(꾹) · <kbd>Tab</kbd> 다른 적으로 대상 전환(3명 이상) · 시점 자동 락온 (마우스 끌기·<kbd>Q</kbd><kbd>E</kbd>·<kbd>←</kbd><kbd>→</kbd>로 살짝 조정)<br>폰: 왼쪽 화면 어디를 눌러도 조이스틱, 조이스틱 둘레 ▲▼◀▶ 버튼으로 그 방향 대시, 대시 버튼은 조이스틱 방향으로(안 밀면 뒤로) 대시, 오른쪽 화면을 끌면 시점 조정, 주력을 담은 공격 버튼은 누른 채 끌어도 시점이 돌아요.<br>친구에게 이 페이지를 공유한 뒤, 한 명이 방을 만들고 다른 한 명이 같은 코드로 들어오세요.';
