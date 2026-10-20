@@ -622,8 +622,8 @@ const CH={
  toji:{name:'후시구로 토우지',title:'주력이 없는 술사 살해자',hp:125,noCE:true,noBF:true,spd:8,r:.55,build:makeToji,keep:2.6,meleeMul:1.35,
   atk:{range:2.7,dmg:[6,6,10],wu:.05,col:0xd0d0d8},
   tal:{name:'단검 투척',cost:0,cd:1.1,fire:F=>shoot(F,{kind:'orb',spd:30,dmg:5,col:0xc8ccd6})},
-  s1:{name:'천역모',desc:'술식을 무효로 하는 단검으로 찌르며 돌진 · 피해 15 · 맞은 상대의 술식을 전부 강제 해제(무하한·간이 영역·영역전연·영역·환수호박·대박·강화 상태·시전 중인 술식·식신, 반전술식 2초 봉인) · 아래 입력과 함께 쓰면 투척',cost:0,cd:4,windup:.2,active:.35,recover:.35,range:[3,12],nullify:true,start:F=>lunge(F,24),contact:15},
-  s2:{name:'유운',desc:'삼절곤으로 세 번 후려침 · 피해 7·7·13에 완력 배율 1.35',cost:0,cd:4,windup:.12,active:.42,recover:.3,range:[0,3.4],ev:[[0,F=>punch(F,3.2,7)],[.14,F=>punch(F,3.2,7)],[.28,F=>punch(F,3.4,13,true)]]},
+  s1:{name:'유운',desc:'삼절곤으로 세 번 후려침 · 피해 7·7·13에 완력 배율 1.35',cost:0,cd:4,windup:.12,active:.42,recover:.3,range:[0,3.4],ev:[[0,F=>punch(F,3.2,7)],[.14,F=>punch(F,3.2,7)],[.28,F=>punch(F,3.4,13,true)]]},
+  s2:{name:'천역모',desc:'술식을 무효로 하는 단검으로 찌르며 돌진 · 피해 15 · 맞은 상대의 술식을 전부 강제 해제(무하한·간이 영역·영역전연·영역·환수호박·대박·강화 상태·시전 중인 술식·식신, 반전술식 2초 봉인) · 아래 입력과 함께 쓰면 투척',cost:0,cd:12,windup:.2,active:.35,recover:.35,range:[3,12],nullify:true,start:F=>lunge(F,24),contact:15},
   s3:{name:'만리쇄',desc:'끝없이 늘어나는 사슬을 던져 맞은 상대를 끌어오고 묶음 · 피해 8 · 사거리 약 35m',cost:0,cd:6,windup:.2,active:.1,recover:.3,range:[5,34],ev:[[0,F=>shoot(F,{kind:'chain',spd:32,dmg:8,l:1.1})]]},
   ultMv:{kind:'ult',key:'ult',name:'기척 소멸',desc:'6초 동안 모습과 기척을 지움 · CPU가 놓치고 유도 공격이 따라오지 않음 · 그동안 첫 타격 피해 1.8배',cost:0,cd:18,windup:.1,active:.1,recover:.1,start:F=>startStealth(F)},
   dom:{name:'기척 소멸',han:'天與呪縛',sky:['#050505','#101010','#202020'],acc:0xd0d0d8,every:9,tick:()=>{},desc:''}},
@@ -636,7 +636,7 @@ CH.kashimo.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께
 CH.hakari.passive='<b>거친 주력</b> 막아도 피해의 40%가 들어감(보통 20%) · <b>대박</b> 영역에서 슬롯이 맞으면 14초 동안 무한 주력·자동 반전술식·쓰러지지 않음, 영역을 써도 술식이 타지 않음';
 CH.hakari.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1: 셔터 연쇄(주력 32)';
 CH.toji.passive='<b>천여주박</b> 주력이 전혀 없음: 술식 비용 0, 반전술식·간이 영역·영역전연·뇌 파괴·결계 불가, 흑섬 불가 · 대신 이동이 빠르고 완력 배율 1.35 · 영역의 필중이 인식하지 못해 결계 공격도 막거나 피할 수 있고 결계 안에서 느려지지 않음';
-CH.toji.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1: 천역모 투척';
+CH.toji.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 2: 천역모 투척(재사용 대기시간은 찌르기와 공유)';
 for(const id of IDS){CH[id].s1.key='s1';CH[id].s2.key='s2';CH[id].s3.key='s3'}ULT.key='ult';
 const ULT_OF=F=>F.def.ultMv||ULT; // 카시모·토우지는 결계 대신 고유 궁극기
 const ultOk=F=>F.def.ultMv?(!F.def.ultMv.check||F.def.ultMv.check(F)):canDom(F);RCT.key='rct';SD.key='sd';
@@ -665,7 +665,7 @@ const FUSION={life:10,hp:65,speed:10.5,bite:{damage:8,range:2.7,cd:.95,wind:.18}
 const MEGUMI_MAX={s1:Object.assign({},CH.megumi.s1,{name:'감합명수 상악',desc:'옥견 혼·오로치·가마·만상을 합친 식신 · 10초간 추격 물기·뱀 공격·혀 속박·물 충격파 · 식신 체력 65',cost:55,cd:14,windup:.65,recover:.4,red:true,maxOutput:true,range:[0,18],ev:[[0,F=>summon(F,'fusion',F.pos.x,F.pos.z,{})]]})};
 const KASHIMO_MAX={s1:Object.assign({},CH.kashimo.s1,{name:'방전 · 주위',desc:'몸에서 사방으로 방전 · 반경 7m 안의 모든 적 · 피해 10+전하당 3 · 막을 수 없음 · 전하 소모',cost:35,maxOutput:true,windup:.3,range:[0,7],ev:[[0,F=>dischargeAround(F)]]})};
 const HAKARI_MAX={s1:Object.assign({},CH.hakari.s1,{name:'셔터 연쇄',desc:'상대 위치에 셔터를 세 번 잇달아 내리침 · 한 번에 피해 9',cost:32,maxOutput:true,windup:.3,active:.5,ev:[[0,F=>shutter(F,opp(F).pos.clone(),9)],[.22,F=>shutter(F,opp(F).pos.clone(),9)],[.44,F=>shutter(F,opp(F).pos.clone(),9)]]})};
-const TOJI_MAX={s1:Object.assign({},CH.toji.s1,{name:'천역모 투척',desc:'천역모를 던짐 · 피해 14 · 맞은 상대의 술식을 전부 강제 해제',maxOutput:true,windup:.25,active:.1,range:[3,24],start:null,contact:0,ev:[[0,F=>shoot(F,{kind:'orb',spd:30,dmg:14,col:0xb08850,nullify:1,heavy:1})]]})};
+const TOJI_MAX={s2:Object.assign({},CH.toji.s2,{name:'천역모 투척',desc:'천역모를 던짐 · 피해 14 · 맞은 상대의 술식을 전부 강제 해제',maxOutput:true,windup:.25,active:.1,range:[3,24],start:null,contact:0,ev:[[0,F=>shoot(F,{kind:'orb',spd:30,dmg:14,col:0xb08850,nullify:1,heavy:1})]]})};
 const MAX_SKILLS={muha:GOJO_MAX,yeom:SUKUNA_MAX,choso:CHOSO_MAX,megumi:MEGUMI_MAX,kashimo:KASHIMO_MAX,hakari:HAKARI_MAX,toji:TOJI_MAX};
 const skillMove=(F,k,max=false)=>max&&MAX_SKILLS[F.id]?.[k]||F.def[k];
 const WORLD_CUT={hold:1.4,damage:54,speed:36,range:40,width:1.9};
