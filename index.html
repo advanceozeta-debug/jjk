@@ -134,6 +134,7 @@ body.touch .tc{display:block}
 .joy.idle{opacity:.45}
 .lpad .btn{pointer-events:auto}
 .tc>.btn:not(.cust),.lpad{zoom:var(--fit,1)}
+body.pc #layoutBtn{display:none}
 .tc .btn{position:absolute;border-radius:50%;border:1px solid var(--line);background:rgba(23,26,46,.62);color:var(--text);font-family:var(--ui);font-weight:900;font-size:15px;line-height:1.1;display:grid;place-items:center;padding:0 4px;word-break:keep-all;touch-action:none;-webkit-tap-highlight-color:transparent}
 .tc .btn.on{filter:brightness(1.5)}
 .tc .btn.low{opacity:.42}
@@ -248,6 +249,7 @@ body.touch .tc{display:block}
       <div class="tag">자정의 옥상 · 3판 2선승</div>
       <em>주술 회전</em>
       <div class="seg" id="mode"><button data-v="cpu">컴퓨터와 대전</button><button data-v="2p">둘이서 대전</button><button data-v="net">온라인 대전</button></div>
+      <div class="seg" id="ctrl" aria-label="조작 방식"><button data-v="auto">자동</button><button data-v="phone">휴대폰</button><button data-v="tablet">태블릿</button><button data-v="pc">PC</button></div>
       <div class="seg" id="diff"><button data-v="easy">쉬움</button><button data-v="normal">보통</button><button data-v="hard">어려움</button></div>
       <div class="netbox" id="net" hidden>
         <div class="row"><button class="go ghost" id="mkRoom">방 만들기</button><input id="code" maxlength="6" placeholder="코드" autocomplete="off" aria-label="방 코드"><button class="go ghost" id="joinRoom">입장</button></div>
@@ -662,15 +664,13 @@ addEventListener('keydown',e=>{key[e.code]=1;if(!e.repeat)KP[e.code]=performance
 addEventListener('keyup',e=>{key[e.code]=0});
 const tapT={},dashTap={};addEventListener('keydown',e=>{if(e.repeat)return;const now=performance.now();if(now-(tapT[e.code]||0)<300){dashTap[e.code]=1;tapT[e.code]=0}else tapT[e.code]=now});
 addEventListener('blur',resetTransientControls);
-if(matchMedia('(pointer:coarse)').matches)document.body.classList.add('touch');
-addEventListener('touchstart',()=>{document.body.classList.add('touch');requestAnimationFrame(()=>fitControls())},{once:true,passive:true});
 let camOff=0,lastLook=0;
 function nudgeCam(dx){camOff=Math.max(-.9,Math.min(.9,camOff-dx*.006));lastLook=performance.now()}
 const tc=$('tc'),joyEl=$('joy'),kn=$('knob');let lookId=null,lookX=0;const fireP={id:null,x:0};
 // ===== 터치 버튼 배치 (세로/가로 따로 저장) =====
 const LAY_KEY='jjk-touch-layout',LAY_IDS=['bAtk','bUlt','bS1','bS2','bS3','bRct','bSd','bAmp','bGd','bDash','bRun','bBrain','bTgt'],
   LAY_PAD=['joy','bQf','bQb','bQl','bQr']; // 조이스틱과 ▲▼◀▶는 각자 따로 옮김 (기본 자리에서 얼마나 옮겼는지 저장)
-const layMode=()=>innerWidth>innerHeight?'land':'port';
+const layMode=()=>(ctrlNow()==='tablet'?'tab-':'')+(innerWidth>innerHeight?'land':'port'); // 태블릿은 배치를 따로 저장
 function layLoad(){try{return JSON.parse(localStorage.getItem(LAY_KEY)||'{}')||{}}catch(_){return {}}}
 function laySave(L){try{localStorage.setItem(LAY_KEY,JSON.stringify(L))}catch(_){}}
 function layApply(){const L=layLoad()[layMode()]||{},r=tc.getBoundingClientRect(),W=r.width||innerWidth,H=r.height||innerHeight;
@@ -685,7 +685,7 @@ function fitControls(){if(fitBusy)return;const st=$('stage').getBoundingClientRe
   const bad=()=>{const R=els().map(e=>e.getBoundingClientRect()),pad=4;
     for(const b of R)if(b.top<st.top+pad||b.left<st.left||b.right>st.right||b.bottom>st.bottom+1)return true;
     for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const a=R[i],c=R[j];if(a.left<c.right-2&&c.left<a.right-2&&a.top<c.bottom-2&&c.top<a.bottom-2)return true}return false};
-  let f=1;root.style.setProperty('--fit','1');FIT=1;
+  const base=ctrlNow()==='tablet'?1.2:1;let f=base;root.style.setProperty('--fit',String(f));FIT=f;
   while(f>.56&&bad()){f=Math.round((f-.04)*100)/100;root.style.setProperty('--fit',String(f));FIT=f}
   fitBusy=false;if(f!==1){const L=layLoad()[layMode()]||{},r=tc.getBoundingClientRect();for(const id of LAY_PAD){const v=L[id];if(v)$(id).style.transform=`translate(${v.dx*r.width/FIT}px,${v.dy*r.height/FIT}px) scale(${v.s||1})`}}}
 let laySel=null,layDrag=null;
@@ -708,7 +708,17 @@ tc.addEventListener('pointermove',e=>{if(!layDrag||e.pointerId!==layDrag.pid)ret
 $('layoutBtn').onclick=layOpen;$('layDone').onclick=layClose;
 $('layReset').onclick=()=>{const L=layLoad();delete L[layMode()];laySave(L);layApply();laySync()};
 $('laySize').oninput=e=>{const v=+e.target.value;$('layVal').textContent=v+'%';if(laySel)layPut(laySel,null,null,v/100)};
-addEventListener('resize',layApply);layApply();
+// ===== 조작 방식: 자동 / 휴대폰 / 태블릿 / PC =====
+const CTRL_KEY='jjk-ctrl',CTRL_NAME={phone:'휴대폰',tablet:'태블릿',pc:'PC'};let CTRL='auto',sawTouch=false;
+try{const v=localStorage.getItem(CTRL_KEY);if(v&&(v==='auto'||CTRL_NAME[v]))CTRL=v}catch(_){}
+function ctrlDetect(){const touch=sawTouch||matchMedia('(pointer:coarse)').matches;if(!touch)return 'pc';
+  const sw=Math.min(screen.width||innerWidth,screen.height||innerHeight);return sw>=600?'tablet':'phone'}
+function ctrlNow(){return CTRL==='auto'?ctrlDetect():CTRL}
+function ctrlApply(){const c=ctrlNow(),b=document.body.classList;b.toggle('touch',c!=='pc');b.toggle('tablet',c==='tablet');b.toggle('pc',c==='pc');
+  layApply();requestAnimationFrame(fitControls)}
+function ctrlSet(v){CTRL=v;try{localStorage.setItem(CTRL_KEY,v)}catch(_){}resetTransientControls();ctrlApply()}
+addEventListener('touchstart',()=>{if(sawTouch)return;sawTouch=true;if(CTRL==='auto')ctrlApply();if(S.state==='select')renderSelect()},{passive:true});
+addEventListener('resize',layApply);ctrlApply();
 function joyRest(){kn.style.transform='';joyEl.classList.add('idle')}
 function joyMove(e){let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),m=(joyEl.offsetWidth*.42||48)*FIT;if(l>m){dx*=m/l;dy*=m/l}joy.x=dx/m;joy.y=dy/m;kn.style.transform=`translate(${dx/FIT}px,${dy/FIT}px)`}
 tc.addEventListener('pointerdown',e=>{
@@ -1873,7 +1883,7 @@ function loop(ts){
 // ================= menus =================
 function seg(id,val,on){document.querySelectorAll('#'+id+' button').forEach(b=>{b.setAttribute('aria-pressed',String(b.dataset.v===val));b.onclick=()=>on(b.dataset.v)})}
 const COMMON='공통 · <b>흑섬</b> 모든 캐릭터의 근접 물리 공격(기본 공격·주먹·발차기·돌진 타격)이 낮은 확률로 2.5배 위력으로 터지고, 터진 뒤 6초는 더 잘 터짐 · 유지와 토도가 같은 팀이면 두 사람의 흑섬 확률 +7%p · 흑섬 뒤 6초는 <b>존</b>: 주력 소모 25~40% 감소, 반전술식 회복 1.5~2배 · <b>결계</b> 쓰고 나면 술식이 타버려 20초 동안 술식 불가 → <b>뇌 파괴</b>(주력 35)로 뇌를 부수고 반전술식으로 고쳐 바로 되살림 · 결계를 닫는 영역끼리는 <b>줄다리기</b>(체력·주력이 많은 쪽이 밀어붙임), 결계 없는 영역은 결계를 0.2초 만에 깸, 결계 없는 영역끼리는 공존 · <b>영역전연</b> 켜 둔 동안 근접 공격이 무하한을 뚫음, 초당 주력 8(고죠 0.48), 대신 술식을 쓰면 풀림 · <b>막기</b> 누르고 있는 동안만, 누른 직후 맞으면 간파 · <b>반전술식</b> 누르고 있는 동안 주력을 써서 계속 회복(맞는 중·기절 중에도), 회복 중엔 느려짐, 쓸수록 출력이 떨어지고(최저 25%) 흑섬을 터뜨리면 출력과 주력을 되찾음 · <b>결계</b> 펼친 사람의 공격은 전부 필중 · <b>간이 영역</b> 언제든 4초, 상대 결계 효과(시전 충격·반복 공격)를 막고 전개한 사람의 필중을 지움(직접 공격은 막아야 함), 들어오는 상대를 자동으로 벰, 피해 25를 받으면 깨짐';
-function keysText(){return keysText0()+'<br><span style="color:var(--dim)">'+COMMON+'</span>'}
+function keysText(){let t=keysText0();const c=ctrlNow(),i=t.indexOf('<br>폰:');if(i>=0)t=c==='pc'?t.slice(0,i):'<b>'+CTRL_NAME[c]+'</b> '+t.slice(i+6)+(S.f.length>2||S.mode==='net'?' · 적이 둘 이상이면 <b>대상 전환</b> 버튼으로 노릴 적을 바꿔요.':'');return t+'<br><span style="color:var(--dim)">'+COMMON+'</span>'}
 function keysText0(){
   if(S.mode==='net')return '<kbd>WASD</kbd> 이동 · 이동 키 두 번 톡 또는 <kbd>Space</kbd> · 대시 · 좌클릭·<kbd>[</kbd>·<kbd>C</kbd> 주력을 담은 공격 (누르고 있으면 연속) · 우클릭·<kbd>Z</kbd> 비술1 · <kbd>X</kbd> 비술2 · <kbd>V</kbd> 비술3 · <kbd>F</kbd> 결계 · <kbd>R</kbd> 반전술식 · <kbd>G</kbd> 간이 영역 · <kbd>T</kbd> 영역전연 · <kbd>Y</kbd> 뇌 파괴 · <kbd>Shift</kbd>·<kbd>K</kbd> 막기(꾹) · <kbd>Tab</kbd> 다른 적으로 대상 전환(3명 이상) · 시점 자동 락온 (마우스 끌기·<kbd>Q</kbd><kbd>E</kbd>·<kbd>←</kbd><kbd>→</kbd>로 살짝 조정)<br>폰: 왼쪽 화면 어디를 눌러도 조이스틱, 조이스틱 둘레 ▲▼◀▶ 버튼으로 그 방향 대시, 대시 버튼은 조이스틱 방향으로(안 밀면 뒤로) 대시, 오른쪽 화면을 끌면 시점 조정, 주력을 담은 공격 버튼은 누른 채 끌어도 시점이 돌아요.<br>친구에게 이 페이지를 공유한 뒤, 한 명이 방을 만들고 다른 한 명이 같은 코드로 들어오세요.';
   if(S.mode==='cpu')return '<kbd>WASD</kbd> 이동 · 이동 키 두 번 톡 또는 <kbd>Space</kbd> · 대시 · 좌클릭·<kbd>[</kbd>·<kbd>C</kbd> 주력을 담은 공격 (누르고 있으면 연속) · 우클릭·<kbd>Z</kbd> 비술1 · <kbd>X</kbd> 비술2 · <kbd>V</kbd> 비술3 · <kbd>F</kbd> 결계 · <kbd>R</kbd> 반전술식 · <kbd>G</kbd> 간이 영역 · <kbd>T</kbd> 영역전연 · <kbd>Y</kbd> 뇌 파괴 · <kbd>Shift</kbd>·<kbd>K</kbd> 막기(꾹) · <kbd>Tab</kbd> 다른 적으로 대상 전환(3명 이상) · 시점 자동 락온 (마우스 끌기·<kbd>Q</kbd><kbd>E</kbd>·<kbd>←</kbd><kbd>→</kbd>로 살짝 조정)<br>폰: 왼쪽 화면 어디를 눌러도 조이스틱, 조이스틱 둘레 ▲▼◀▶ 버튼으로 그 방향 대시, 대시 버튼은 조이스틱 방향으로(안 밀면 뒤로) 대시, 오른쪽 화면을 끌면 시점 조정, 주력을 담은 공격 버튼은 누른 채 끌어도 시점이 돌아요.';
@@ -1883,7 +1893,7 @@ function keysText0(){
 const info=c=>`체력 ${c.hp}${c.armor?' · 경직 무시':''}${c.inf?' · <b>무하한</b> 게이지가 남아 있으면 공격과 투사체가 닿지 않음, 막을 때마다 게이지가 깎이고 저절로 차지 않음, 내구도 35, 0이 되면 깨지고 15초 뒤 가득 찬 채로 다시 생김, 결계가 펼쳐져 있는 동안은 꺼짐':''}${c.six?' · <b>육안</b> 술식 주력 소모가 다른 술사의 6%, 회복 25% 증가':''}${c.meleeMul?' · <b>체술</b> 근접 물리 피해 +'+Math.round((c.meleeMul-1)*100)+'%':''}${c.bf?' · 기본 흑섬 확률 '+Math.round((.04+c.bf)*100)+'%':''}${c===CH.yuji||c===CH.todo?' · <b>팀 보너스</b> 유지와 토도가 같은 팀이면 두 사람의 흑섬 확률 +7%p':''}${c.venom?' · <b>맹독성 피</b> 공격을 맞히면 독이 쌓여(최대 3중첩) 4초 동안 체력이 계속 깎임 · <b>피 묻음</b> 혈액 스킬 적중마다 1스택(최대 '+BLOOD_MARK.max+'스택), 마지막 적중부터 '+BLOOD_MARK.dur+'초 유지. 독 면역인 상대에게도 쌓임':''}${c.noPoison?' · 독 면역':''}${c.mpMax?' · 주력 '+c.mpMax+'(타고나기를 2배)':''}${c.eff?' · 주력 효율 좋음(소모 '+Math.round(c.eff*100)+'%)':''}${c.ratio?' · <b>칠삼</b> 3타째는 약점을 찔러 1.7배':''}<br><b>${c.s1.name}</b> ${c.s1.desc} (주력 ${cost({def:c},c.s1)}·${c.s1.cd}초) · <b>${c.s2.name}</b> ${c.s2.desc} (주력 ${cost({def:c},c.s2)}·${c.s2.cd}초) · <b>${c.s3.name}</b> ${c.s3.desc} (주력 ${cost({def:c},c.s3)}·${c.s3.cd}초)<br>${c.ultMv?'궁극기 <b>'+c.ultMv.name+'</b> '+c.ultMv.desc+' (주력 '+cost({def:c},c.ultMv)+(c.ultMv.cd>1?'·'+c.ultMv.cd+'초':'')+')':'결계 <b>'+c.dom.name+'</b> '+c.dom.desc+' (주력 '+cost({def:c},ULT)+'·20초)'}${c.passive?'<br>'+c.passive:''}${c.maxHelp?'<br><b>강화 커맨드</b> '+c.maxHelp:''}${c===CH.muha?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼를 누른 채 비술: 1 아오 최대 출력 · 2 아카 최대 출력 · 3 자폭 무라사키. 강화형은 주력을 더 소모하고 피해량이 증가하며 재사용 대기시간은 기본형과 공유. 자폭 무라사키는 라운드당 1회이며 3번 강화 스킬과 합성이 횟수를 공유. 실제 폭발할 때 차감되며 다음 라운드에 회복. 머리 위에서 반경 12m로 폭발하며 적 피해 48, 본인 피해 12.<br><b>술식 합성</b> 남아 있는 아오에 같은 고죠의 아카를 맞히면 무라사키. 둘 다 최대 출력이고 자폭 횟수가 남아 있으면 머리 위에서 자폭 무라사키로 합성. 횟수를 다 썼거나 자폭 스킬을 시전 중이면 일반 무라사키로 합성.':c===CH.yeom?'<br><b>강화 커맨드</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 비술: 1 연속 참격(주력 '+cost({def:c},SUKUNA_MAX.s1)+'·9연타·최대 피해 27) · 2 그물 참격(주력 '+cost({def:c},SUKUNA_MAX.s2)+'·피해 36). 강화형과 기본형은 재사용 대기시간을 공유.<br><b>팔 · 푸가</b> 기본 2번은 6m 안의 한 상대를 지정해 몸에 참격 6연타. 지정 후에는 움직이는 대상의 몸을 따라 참격이 발생. 최대 체력·최대 주력에 따라 피해 증가. 같은 라운드에 해 계열(연속·차징 포함)과 팔을 모두 적중시키면 푸가가 개방되며 라운드가 끝날 때까지 유지. 빗나감·무하한·방어·간파는 해금에 포함되지 않음.<br><b>차징</b> 1번 비술을 1.4초 꾹 누른 뒤 놓으면 세계를 가르는 참격(주력 '+cost({def:c},WORLD_SLASH)+'·피해 54·10초). 짧게 놓으면 일반 참격, 아래 입력과 짧게 누르면 연속 참격. 방어·대시로 차징을 취소할 수 있음.':c===CH.megumi?'<br><b>합성 식신</b> 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1번 옥견을 쓰면 <b>감합명수 상악</b>(주력 '+cost({def:c},MEGUMI_MAX.s1)+'·14초). 옥견 혼·오로치·가마·만상을 한 몸으로 합친 3D 식신이 10초 동안 추격하며 물기, 뱀 공격, 혀로 끌어당기기, 물 충격파를 사용. 체력 65로 공격을 여러 번 버티며, 체력이 다 떨어지거나 소환자가 쓰러지면 해제. 한 번에 한 마리 소환하고 자신의 기존 옥견을 대체. 기본 옥견과 쿨타임 공유.':c===CH.choso?'<br><b>강화 커맨드</b> 1번 기본 입력은 예불(주력 '+cost({def:c},c.s1)+'·피해 12). 조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1번을 쓰면 천혈(주력 '+cost({def:c},CHOSO_MAX.s1)+'·피해 15·직선 30m). 예불과 천혈은 5초 재사용 대기시간을 공유.<br><b>바닥 혈흔</b> 혈탄·예불·천혈·초신성·혈해는 빗나가도 바닥에 피가 남음. 자신이 남긴 피는 '+GROUND_BLOOD.dur+'초 유지되며 최대 '+GROUND_BLOOD.max+'개. 기본 초신성은 혈액 구체 8개를 사방으로 퍼뜨린 뒤 0.9초 후 폭발(구체당 피해 5, 한 대상 최대 3회). ↓ 또는 뒤 대시 ▼와 함께 2번은 <b>초신성 · 혈흔 기폭</b>: 자신의 바닥 피를 소모해 위로 솟구치는 폭발(혈흔당 피해 6, 한 대상 최대 3회). 두 초신성은 주력 25·재사용 5초를 공유. 혈흔이 없으면 혈흔 기폭은 주력과 재사용 대기시간을 소모하지 않음.':''}`;
 function remoteCh(){const o=NET.list.find(p=>!p.sameTab);return o?o.presence.ch:null}
 function renderSelect(){
-  seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});seg('team',String(S.team|0),v=>{S.team=+v;renderSelect();pushLobby()});
+  seg('mode',S.mode,v=>{if(v!=='net'&&NR){NR.leave().catch(()=>{});NR=null;NET.code=null;NET.remote=null}S.mode=v;renderSelect();previewFighters()});seg('diff',S.diff,v=>{S.diff=v;renderSelect()});seg('ctrl',CTRL,v=>{ctrlSet(v);renderSelect()});$('ctrl').querySelector('[data-v=auto]').textContent='자동 ('+CTRL_NAME[ctrlDetect()]+')';$('layoutBtn').textContent='터치 버튼 배치 바꾸기'+(ctrlNow()==='tablet'?' (태블릿용)':ctrlNow()==='phone'?' (휴대폰용)':'');seg('team',String(S.team|0),v=>{S.team=+v;renderSelect();pushLobby()});
   const net=S.mode==='net';
   $('diff').hidden=S.mode!=='cpu';$('net').hidden=!net;
   $('p1lab').textContent=net?'나':'1P';$('p2lab').textContent=net?'방 인원 (최대 '+MAXP+'명)':S.mode==='2p'?'2P':'CPU';$('keys').innerHTML=keysText();
