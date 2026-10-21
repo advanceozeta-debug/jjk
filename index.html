@@ -655,7 +655,7 @@ const CHOSO_MAX={
   s1:Object.assign({},CH.choso.s1,{name:'천혈',desc:'압축한 피를 한 줄기로 쏘아 멀리까지 꿰뚫음 · 피해 15',cost:30,maxOutput:true,windup:.45,recover:.35,red:true,range:[3,30],ev:[[0,F=>beam(F,30,15)]]}),
   s2:Object.assign({},CH.choso.s2,{name:'피의 해일',desc:'자신을 중심으로 피가 해일처럼 퍼져 반경 15m 바닥을 피로 뒤덮음 · 휩쓸린 상대는 피해 10과 함께 밀려나고 피 묻음 · 덮인 피는 혈흔 기폭으로 터뜨릴 수 있음',cost:35,cd:9,maxOutput:true,windup:.45,red:true,range:[0,15],ev:[[0,F=>bloodTide(F)]]})
 };
-const BLOOD_MARK={max:999,dur:10,burst:3}; // 피 묻음: 상한 없이 쌓이고, 혈흔 기폭을 쓰면 한 겹당 피해 3으로 터짐
+const BLOOD_MARK={max:999,dur:10,burst:2}; // 피 묻음: 상한 없이 쌓이고, 혈흔 기폭을 쓰면 한 겹당 피해 2으로 터짐
 const GROUND_BLOOD={dur:12,max:110,spacing:3,radius:1.8,damage:6,maxHits:3};
 const SUPERNOVA={count:8,scatter:3.2,travel:.45,fuse:.9,radius:2.8,damage:5,maxHits:3};
 const FUSION={life:10,hp:65,speed:10.5,bite:{damage:8,range:2.7,cd:.95,wind:.18},snake:{damage:12,range:6,cd:2.8,wind:.3},tongue:{damage:6,range:9,cd:4,wind:.32},water:{damage:14,range:3.4,cd:3.8,wind:.42}};
@@ -663,7 +663,7 @@ const MEGUMI_MAX={s1:Object.assign({},CH.megumi.s1,{name:'감합명수 상악',d
 const KASHIMO_MAX={s1:Object.assign({},CH.kashimo.s1,{name:'방전 · 주위',desc:'몸에서 사방으로 방전 · 반경 7m 안의 모든 적 · 피해 10+전하당 3 · 막을 수 없음 · 전하 소모',cost:35,maxOutput:true,windup:.3,range:[0,7],ev:[[0,F=>dischargeAround(F)]]})};
 const HAKARI_MAX={s1:Object.assign({},CH.hakari.s1,{name:'셔터 연쇄',desc:'상대 위치에 셔터를 세 번 잇달아 내리침 · 한 번에 피해 9',cost:32,maxOutput:true,windup:.3,active:.5,ev:[[0,F=>shutter(F,opp(F).pos.clone(),9)],[.22,F=>shutter(F,opp(F).pos.clone(),9)],[.44,F=>shutter(F,opp(F).pos.clone(),9)]]})};
 const TOJI_MAX={s2:Object.assign({},CH.toji.s2,{name:'천역모 투척',desc:'천역모를 던짐 · 피해 14 · 맞은 상대의 술식을 전부 강제 해제',maxOutput:true,windup:.25,active:.1,range:[3,24],start:null,contact:0,ev:[[0,F=>shoot(F,{kind:'orb',spd:30,dmg:14,col:0xb08850,nullify:1,heavy:1})]]})};
-const SIDE_SKILLS={choso:{s2:Object.assign({},CH.choso.s2,{name:'초신성 · 혈흔 기폭',sideOutput:true,desc:'좌우 입력과 함께 · 자신이 남긴 바닥 피를 전부 소모해 위로 분출 · 혈흔당 피해 6, 한 대상 최대 3회 · 피 묻음이 쌓인 모든 적은 거리와 상관없이 쌓인 만큼 한꺼번에 터짐(한 겹당 피해 3, 막을 수 없음) · 바닥 피가 없어도 피 묻은 적이 있으면 쓸 수 있음',maxOutput:true,groundBlood:true,windup:.3,ev:[[0,F=>eruptBlood(F)]]})}};
+const SIDE_SKILLS={choso:{s2:Object.assign({},CH.choso.s2,{name:'초신성 · 혈흔 기폭',sideOutput:true,desc:'좌우 입력과 함께 · 자신이 남긴 바닥 피를 전부 소모해 위로 분출 · 혈흔당 피해 6, 한 대상 최대 3회 · 피 묻음이 쌓인 모든 적은 거리와 상관없이 쌓인 만큼 한꺼번에 터짐(한 겹당 피해 2, 막을 수 없음) · 바닥 피가 없어도 피 묻은 적이 있으면 쓸 수 있음',maxOutput:true,groundBlood:true,windup:.3,ev:[[0,F=>eruptBlood(F)]]})}};
 const MAX_SKILLS={muha:GOJO_MAX,yeom:SUKUNA_MAX,choso:CHOSO_MAX,megumi:MEGUMI_MAX,kashimo:KASHIMO_MAX,hakari:HAKARI_MAX,toji:TOJI_MAX};
 const skillMove=(F,k,max=false)=>max==='side'?(SIDE_SKILLS[F.id]?.[k]||F.def[k]):max&&MAX_SKILLS[F.id]?.[k]||F.def[k];
 const WORLD_CUT={hold:1.4,damage:54,speed:36,range:40,width:1.9};
