@@ -621,7 +621,7 @@ const CH={
   tal:{name:'린민탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0xd8202a})},
   s1:{name:'사(死)',desc:'순전 술식 · 에너지 구를 날림 · 맞으면 폭발(반경 2.5m, 피해 10)하고, 휘말린 상대는 주력 15를 빼앗긴 채 위원장 쪽으로 끌려옴 · 빼앗은 주력은 린민 주력으로',cost:25,cd:4.5,windup:.25,active:.1,recover:.3,range:[2,15],ev:[[0,F=>shoot(F,{kind:'kimSa',spd:19,dmg:10,col:0x8a0a1a,stun:.35,kim:'sa'})]]},
   s2:{name:'멸(滅)',desc:'술식 반전 · 길을 쓸고 지나가는 관통 구체 · 경로의 투사체와 식신을 깔끔하게 청소 · 피해 13 · 막을 수 없음',cost:30,cd:6,windup:.4,active:.1,recover:.35,red:true,range:[3,16],ev:[[0,F=>shoot(F,{kind:'kimMyeol',spd:17,dmg:13,l:1.4,pierce:1,radius:1.2,kim:'myeol'})]]},
-  s3:{name:'린민 식신',desc:'린민 식신 소환술 · '+'린민 식신 5명을 불러냄 · 7초 동안 가까운 적에게 달려들어 때리고(피해 3), 날아오는 투사체를 대신 맞아 막아 줌',cost:30,cd:12,windup:.3,active:.1,recover:.3,range:[0,99],ev:[[0,F=>{for(let i=0;i<KIM.inmin;i++)summon(F,'inmin',F.pos.x,F.pos.z,{i})}]]},
+  s3:{name:'허식 · 핵(核)',desc:'1.4초 동안 핵분열로 주력을 증폭해 거대한 구를 쏨 · 닿거나 끝까지 날아가면 반경 20m 대폭발(피해 22 + 린민 주력 10당 4, 린민 주력을 전부 씀, 막을 수 없음) · 터진 자리 반경 20m에 8초 동안 낙진이 남아 위원장 자신을 포함해 안에 있으면 초당 피해 3',cost:60,cd:16,red:true,windup:1.4,active:.1,recover:.6,range:[4,18],ev:[[0,F=>{const pw=Math.floor(F.rmG||0);F.rmG=0;shoot(F,{kind:'kimNuke',spd:11,dmg:0,l:1.8,radius:1.1,kim:'nuke',pw})}]]},
   dom:{name:'아오지 탄광',han:'阿吾地炭鑛',noBarrier:true,radius:120,sky:['#060606','#151310','#2a2620'],acc:0xc8a060,every:.6,tick:F=>{const O=opp(F);if(hit(F,O,1.5,{unb:true,seal:true,drain:KIM.mineDrain})){kimGain(F,KIM.mineDrain);mineRockFx(O)}},desc:'결계 없이 반지름 120m로 펼쳐지는 탄광 · 범위 안의 적은 <b>강제 노동</b>: 술식(비술·결계)을 쓸 수 없고 0.6초마다 주력 6을 빼앗김 · 빼앗은 주력은 린민 주력으로 · 결계를 닫는 영역은 0.2초 만에 무너뜨림'}}
 };
 const HP_MULT=3; // 판이 너무 빨리 끝나지 않게 모든 캐릭터 체력 3배
@@ -629,8 +629,7 @@ for(const id in CH)CH[id].hp*=HP_MULT;
 const IDS=Object.keys(CH);
 CH.kashimo.passive='<b>전기를 띤 주력</b> 카시모의 공격에 맞으면 전하가 묻음(최대 4, 6초 유지) · 방전·전도는 전하를 따라 막을 수 없이 꽂힘 · <b>반전술식을 못 씀</b>(반전술식·뇌 파괴 불가)';
 CH.kashimo.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1: 방전 · 주위(주력 35)';
-CH.kim.passive='<b>백두혈통</b> 린민의 주력이 몸에 둘러져 받는 피해를 대신 막음(린민 주력 최대 60, 천천히 차오름 · 사와 아오지 탄광으로 빼앗은 주력이 쌓임) · 린민 주력이 바닥나면 <b>인민 이탈</b>로 8초 동안 다시 안 쌓임';
-CH.kim.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 3: 허식 · 핵(주력 60, 린민 주력을 전부 씀)';
+CH.kim.passive='<b>백두혈통</b> 린민의 주력이 몸에 둘러져 받는 피해를 대신 막음(린민 주력 최대 60, 천천히 차오름 · 사와 아오지 탄광으로 빼앗은 주력이 쌓임) · 린민 주력이 바닥나면 <b>인민 이탈</b>로 8초 동안 다시 안 쌓임 · <b>린민 식신</b> 20초마다 저절로 5명이 나와 7초 동안 적에게 달려들어 때리고(피해 3) 날아오는 투사체를 대신 맞아 막아 줌';
 CH.hakari.passive='<b>거친 주력</b> 막아도 피해의 30%가 들어감(보통 20%) · <b>대박</b> 영역에서 슬롯이 맞으면 11초 동안 무한 주력·자동 반전술식·쓰러지지 않음, 영역을 써도 술식이 타지 않음';
 CH.hakari.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1: 셔터 연쇄(주력 32)';
 CH.toji.passive='<b>천여주박</b> 주력이 전혀 없음: 술식 비용 0, 반전술식·간이 영역·영역전연·뇌 파괴·결계 불가, 흑섬 불가 · 대신 이동이 빠르고 완력 배율 1.35 · 영역의 필중이 인식하지 못해 결계 공격도 막거나 피할 수 있고 결계 안에서 느려지지 않음';
@@ -664,8 +663,7 @@ const MEGUMI_MAX={s1:Object.assign({},CH.megumi.s1,{name:'감합명수 상악',d
 const KASHIMO_MAX={s1:Object.assign({},CH.kashimo.s1,{name:'방전 · 주위',desc:'몸에서 사방으로 방전 · 반경 7m 안의 모든 적 · 피해 10+전하당 3 · 막을 수 없음 · 전하 소모',cost:35,maxOutput:true,windup:.3,range:[0,7],ev:[[0,F=>dischargeAround(F)]]})};
 const HAKARI_MAX={s1:Object.assign({},CH.hakari.s1,{name:'셔터 연쇄',desc:'상대 위치에 셔터를 세 번 잇달아 내리침 · 한 번에 피해 9',cost:32,maxOutput:true,windup:.3,active:.5,ev:[[0,F=>shutter(F,opp(F).pos.clone(),9)],[.22,F=>shutter(F,opp(F).pos.clone(),9)],[.44,F=>shutter(F,opp(F).pos.clone(),9)]]})};
 const TOJI_MAX={s2:Object.assign({},CH.toji.s2,{name:'천역모 투척',desc:'천역모를 던짐 · 피해 14 · 맞은 상대의 술식을 전부 강제 해제',maxOutput:true,windup:.25,active:.1,range:[3,24],start:null,contact:0,ev:[[0,F=>shoot(F,{kind:'orb',spd:30,dmg:14,col:0xb08850,nullify:1,heavy:1})]]})};
-const KIM_MAX={s3:Object.assign({},CH.kim.s3,{name:'허식 · 핵(核)',desc:'1.4초 동안 핵분열로 주력을 증폭해 거대한 구를 쏨 · 닿거나 끝까지 날아가면 반경 7m 대폭발(피해 22 + 린민 주력 10당 4, 린민 주력을 전부 씀, 막을 수 없음) · 터진 자리에 8초 동안 낙진이 남아 위원장 자신을 포함해 안에 있으면 초당 피해 3',cost:60,cd:16,maxOutput:true,red:true,windup:1.4,active:.1,recover:.6,range:[4,18],ev:[[0,F=>{const pw=Math.floor(F.rmG||0);F.rmG=0;shoot(F,{kind:'kimNuke',spd:11,dmg:0,l:1.8,radius:1.1,kim:'nuke',pw})}]]})};
-const MAX_SKILLS={kim:KIM_MAX,muha:GOJO_MAX,yeom:SUKUNA_MAX,choso:CHOSO_MAX,megumi:MEGUMI_MAX,kashimo:KASHIMO_MAX,hakari:HAKARI_MAX,toji:TOJI_MAX};
+const MAX_SKILLS={muha:GOJO_MAX,yeom:SUKUNA_MAX,choso:CHOSO_MAX,megumi:MEGUMI_MAX,kashimo:KASHIMO_MAX,hakari:HAKARI_MAX,toji:TOJI_MAX};
 const skillMove=(F,k,max=false)=>max&&MAX_SKILLS[F.id]?.[k]||F.def[k];
 const WORLD_CUT={hold:1.4,damage:54,speed:36,range:40,width:1.9};
 const CHARGE_S1={kind:'charge',key:'s1',name:'참격 차징',cost:0,cd:0,windup:WORLD_CUT.hold,active:0,recover:0,red:true};
@@ -919,7 +917,7 @@ function resetRound(){
   clearAll();
   for(const a of[tapT,runTap])for(const k in a)delete a[k];
   for(const F of S.f){Object.assign(F,{hp:F.def.hp,mp:MPX(F),state:'free',act:null,inv:0,stag:0,guard:false,dashT:0,dashCd:0,lv:null,combo:0,queued:false,runLatch:false,running:false,pull:null,koT:0,aiParry:false,moveAmt:0,sukunaHits:0,sukunaPending:{},bfPending:{},fugaPop:-9,purpleUsed:0,purpleSeen:0,purplePop:-9});
-    F.keyboardSkill='s1';F.castSkill=null;F.castStamp=null;F.domainSpace='';F.spaceVersion=0;F.domainSeq=0;F.domainGone=0;F.netStamp=0;F.netSerial=0;F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.lock=null;F.lacN=0;F.lacT=0;F.rmG=F.id==='kim'?KIM.rmStart:0;F.rmBrk=0;F.sealT=0;F.rctBlockT=0;F.chgN=0;F.chgT=0;F.amberT=0;F.amberUsed=false;F.wreckT=0;F.jackpotT=0;F.reserve=0;F.stealthT=0;F.ghostA=1;F.skillQueue={};F.backSkillUntil=0;F.maxOutputReady=false;F.counterT=0;F.otT=0;F.redT=0;F.burnT=0;F.psT=0;F.psN=0;F.bloodN=0;F.bloodT=0;F.bloodId=0;F.bloodVersion=0;F.bloodCast=0;F.bloodCastSeen=0;F.bloodPop=-9;F.fusionSeq=0;F.fusionGone=0;F.infG=INF_MAX;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);{const mates=S.f.filter(x=>x.side===F.side),k=mates.indexOf(F);F.pos.set((k-(mates.length-1)/2)*3.2,0,F.side?-5:5)}F.face=F.side?0:PI;F.state='free';F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
+    F.keyboardSkill='s1';F.castSkill=null;F.castStamp=null;F.domainSpace='';F.spaceVersion=0;F.domainSeq=0;F.domainGone=0;F.netStamp=0;F.netSerial=0;F.cd={tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0};F.lock=null;F.lacN=0;F.lacT=0;F.rmG=F.id==='kim'?KIM.rmStart:0;F.inminT=KIM.inminEvery;F.rmBrk=0;F.sealT=0;F.rctBlockT=0;F.chgN=0;F.chgT=0;F.amberT=0;F.amberUsed=false;F.wreckT=0;F.jackpotT=0;F.reserve=0;F.stealthT=0;F.ghostA=1;F.skillQueue={};F.backSkillUntil=0;F.maxOutputReady=false;F.counterT=0;F.otT=0;F.redT=0;F.burnT=0;F.psT=0;F.psN=0;F.bloodN=0;F.bloodT=0;F.bloodId=0;F.bloodVersion=0;F.bloodCast=0;F.bloodCastSeen=0;F.bloodPop=-9;F.fusionSeq=0;F.fusionGone=0;F.infG=INF_MAX;F.infBrk=0;F.infLast=-9;F.ampOn=false;F.rctOut=1;F.sdT=0;F.zoneT=0;F.zone=0;if(F.sdm)F.sdm.visible=false;F.emp=0;F.netPos=null;F.kb.set(0,0,0);{const mates=S.f.filter(x=>x.side===F.side),k=mates.indexOf(F);F.pos.set((k-(mates.length-1)/2)*3.2,0,F.side?-5:5)}F.face=F.side?0:PI;F.state='free';F.m.rotation.set(0,F.face,0);F.tg.visible=false;F.ai.next=.6;F.ai.react=null}
 }
 function startMatch(){
   try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(_){}
@@ -944,7 +942,7 @@ const LAC={max:5,dur:5,dps:.7};
 function lacerate(T){if(!(T.lacT>0))T.lacN=0;const before=T.lacN|0;T.lacN=Math.min(LAC.max,before+1);T.lacT=LAC.dur;
   if(T.lacN>before&&(!T.lacPop||S.t-T.lacPop>.6)){T.lacPop=S.t;pop(T,'열상 ×'+T.lacN,'#ff5a6a')}burst(T.pos.clone().setY(1.1),0xb0101a,4,3)}
 // ===== 위원장 (패러디) =====
-const KIM={rmMax:60,rmStart:30,regen:1.2,brk:8,saDrain:15,saR:2.5,mineDrain:6,inmin:5,nukeR:7,nukeDmg:22,falloutT:8,falloutDps:3};
+const KIM={rmMax:60,rmStart:30,regen:1.2,brk:8,saDrain:15,saR:2.5,mineDrain:6,inmin:5,nukeR:20,inminEvery:20,nukeDmg:22,falloutT:8,falloutDps:3};
 function kimGain(F,n){if(F.id!=='kim'||F.remote||F.rmBrk>0)return;F.rmG=Math.min(KIM.rmMax,(F.rmG||0)+n)}
 function rmAbsorb(T,dmg){if(T.id!=='kim'||!(T.rmG>0)||!(dmg>0))return dmg;const a=Math.min(T.rmG,dmg);T.rmG-=a;
   burst(T.pos.clone().setY(1.1),0xd8202a,4,4);if(T.rmG<=0){T.rmG=0;T.rmBrk=KIM.brk;pop(T,'인민 이탈','#ff8a7a');snd(160,.4,'sawtooth',.05,-60)}return dmg-a}
@@ -1950,7 +1948,8 @@ function stepFighter(F,I,dt){
   if(F.def.inf&&F.infBrk>0){F.infBrk-=dt;if(F.infBrk<=0){F.infBrk=0;F.infG=INF_MAX;pop(F,'무하한 재생','#9fd0ff');burst(F.pos.clone().setY(1.1),0x9fd0ff,20,6);snd(880,.3,'sine',.04,440)}}
   if(F.ampOn){F.mp=Math.max(0,F.mp-ampDrain(F)*zoneEff(F)*dt);if(F.mp<=0)setAmp(F,false)}
   if(F.sealT>0)F.sealT-=dt;
-  if(F.id==='kim'){if(F.rmBrk>0)F.rmBrk-=dt;else F.rmG=Math.min(KIM.rmMax,(F.rmG||0)+KIM.regen*dt)}
+  if(F.id==='kim'){if(F.rmBrk>0)F.rmBrk-=dt;else F.rmG=Math.min(KIM.rmMax,(F.rmG||0)+KIM.regen*dt);
+    F.inminT=(F.inminT??KIM.inminEvery)-dt;if(F.inminT<=0){F.inminT=KIM.inminEvery;for(let i=0;i<KIM.inmin;i++)summon(F,'inmin',F.pos.x,F.pos.z,{i});pop(F,'린민 식신','#d8202a')}}
   if(F.lacT>0){F.lacT-=dt*(F.rcting?2.5:1);F.hp=Math.max(0,F.hp-LAC.dps*F.lacN*dt);if(Math.random()<.3)burst(F.pos.clone().setY(.5+Math.random()*1.3),0xb0101a,1,2);
     if(F.jackpotT>0)F.hp=Math.max(1,F.hp);if(F.hp<=0&&S.state==='fight')ko(F);if(F.lacT<=0){F.lacT=0;F.lacN=0}}
   if(F.psT>0){F.psT-=dt;F.hp=Math.max(0,F.hp-1.2*F.psN*dt);if(Math.random()<.25)burst(F.pos.clone().setY(.4+Math.random()*1.4),0x8a2a9a,1,2);
