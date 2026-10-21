@@ -616,7 +616,7 @@ const CH={
   s3:{name:'만리쇄',desc:'끝없이 늘어나는 사슬을 던져 맞은 상대를 끌어오고 묶음 · 피해 8 · 사거리 약 35m',cost:0,cd:6,windup:.2,active:.1,recover:.3,range:[5,34],ev:[[0,F=>shoot(F,{kind:'chain',spd:32,dmg:8,l:1.1})]]},
   ultMv:{kind:'ult',key:'ult',name:'기척 소멸',desc:'6초 동안 모습과 기척을 지움 · CPU가 놓치고 유도 공격이 따라오지 않음 · 그동안 첫 타격 피해 1.8배',cost:0,cd:18,windup:.1,active:.1,recover:.1,start:F=>startStealth(F)},
   dom:{name:'기척 소멸',han:'天與呪縛',sky:['#050505','#101010','#202020'],acc:0xd0d0d8,every:9,tick:()=>{},desc:''}},
- kim:{name:'위원장',title:'린민의 주력을 두른 독재자 (패러디)',hp:110,spd:6.2,r:.55,build:makeKim,keep:5,rm:true,
+ kim:{name:'김정은',title:'린민의 주력을 두른 독재자 (패러디)',hp:110,spd:6.2,r:.55,build:makeKim,keep:5,rm:true,
   atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0xd8202a},
   tal:{name:'린민탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0xd8202a})},
   s1:{name:'사(死)',desc:'순전 술식 · 에너지 구를 날림 · 맞으면 폭발(반경 2.5m, 피해 10)하고, 휘말린 상대는 주력 15를 빼앗긴 채 위원장 쪽으로 끌려옴 · 빼앗은 주력은 린민 주력으로',cost:25,cd:4.5,windup:.25,active:.1,recover:.3,range:[2,15],ev:[[0,F=>shoot(F,{kind:'kimSa',spd:19,dmg:10,col:0x8a0a1a,stun:.35,kim:'sa'})]]},
