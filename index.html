@@ -479,6 +479,36 @@ function makeKim(){const [g,b,add]=grp();
   const aura=new THREE.Mesh(new THREE.SphereGeometry(1.25,18,12),basic(0xd8202a,{transparent:true,opacity:.12,side:THREE.BackSide,depthWrite:false,blending:THREE.AdditiveBlending}));aura.position.y=1.05;g.add(aura);g.userData.rm=aura;
   const piv=new THREE.Group();piv.position.set(.44,1.05,.1);const arm=new THREE.Mesh(new THREE.BoxGeometry(.14,.14,.42),lam(0x2f3236));arm.position.z=.2;
   const orb=glow(0xd8202a,.6);orb.position.z=.5;piv.add(arm,orb);b.add(piv);g.userData.piv=piv;return g}
+function makeJogo(){const [g,b,add]=grp();
+  add(new THREE.CylinderGeometry(.34,.5,1.05,12),lam(0xe6e0c8),0,.52,0);add(new THREE.CylinderGeometry(.42,.34,.3,12),lam(0x5a2a18),0,1.08,0);
+  const head=add(new THREE.ConeGeometry(.5,.95,14,1,true),lam(0x3a2a24),0,1.68,0);head.material.side=THREE.DoubleSide;
+  add(new THREE.CylinderGeometry(.16,.16,.06,12),basic(0xff6a1a),0,2.12,0);const lava=glow(0xff5a0a,1.4);lava.position.set(0,2.2,0);b.add(lava);
+  add(new THREE.SphereGeometry(.13,10,8),basic(0xfff4e0),0,1.55,.32);add(new THREE.SphereGeometry(.06,8,6),basic(0x1a0a04),0,1.55,.43);
+  const piv=new THREE.Group();piv.position.set(.42,1.0,.1);const arm=new THREE.Mesh(new THREE.BoxGeometry(.14,.14,.4),lam(0x3a2a24));arm.position.z=.2;
+  const f=glow(0xff6a1a,.7);f.position.z=.45;piv.add(arm,f);b.add(piv);g.userData.piv=piv;return g}
+function makeHanami(){const [g,b,add]=grp();
+  add(new THREE.CylinderGeometry(.3,.55,1.6,10),lam(0xbfae8a),0,.8,0);add(new THREE.BoxGeometry(.8,.6,.45),lam(0x6a2a30),0,1.45,0);
+  add(new THREE.SphereGeometry(.3,14,10),lam(0xd9cfb0),0,2.0,0);add(new THREE.BoxGeometry(.5,.12,.04),lam(0xf2efe6),0,2.04,.28);
+  for(const s of[-1,1]){const br=add(new THREE.ConeGeometry(.07,.55,6),lam(0x6a4a2a),s*.12,2.06,.5);br.rotation.x=PI/2;const lf=glow(0x8fd06a,.35);lf.position.set(s*.12,2.06,.8);b.add(lf)}
+  for(let i=0;i<5;i++)add(new THREE.BoxGeometry(.06,.5,.06),lam(0x3a2a1a),(i-2)*.12,2.32,-.1).rotation.z=(i-2)*.2;
+  const piv=new THREE.Group();piv.position.set(.48,1.25,.1);const arm=new THREE.Mesh(new THREE.BoxGeometry(.16,.16,.5),lam(0xbfae8a));arm.position.z=.25;
+  const f=glow(0x8fd06a,.6);f.position.z=.55;piv.add(arm,f);b.add(piv);g.userData.piv=piv;return g}
+function makeDagon(){const [g,b,add]=grp();
+  add(new THREE.SphereGeometry(.68,16,12),lam(0x9a4a3a),0,.75,0).scale.y=.95;add(new THREE.SphereGeometry(.5,14,10),lam(0xb8644e),0,1.55,0);
+  for(const s of[-1,1]){add(new THREE.SphereGeometry(.09,8,6),basic(0xfff0d0),s*.2,1.66,.42);add(new THREE.SphereGeometry(.045,6,4),basic(0x101010),s*.2,1.66,.5)}
+  for(let i=0;i<5;i++){const t=add(new THREE.CylinderGeometry(.05,.02,.4,6),lam(0x7a3a2e),(i-2)*.09,1.28,.38);t.rotation.x=.3}
+  const piv=new THREE.Group();piv.position.set(.6,.9,.1);const f=glow(0x5ab0ff,.8);f.position.z=.4;piv.add(f);b.add(piv);g.userData.piv=piv;return g}
+function makeMahito(){const [g,b,add]=grp();
+  add(new THREE.CylinderGeometry(.24,.42,1.35,10),lam(0x2a2e3a),0,.68,0);add(new THREE.BoxGeometry(.56,.55,.32),lam(0x5a6278),0,1.25,0);
+  add(new THREE.SphereGeometry(.27,14,10),lam(0xbcc6cf),0,1.72,0);const hair=add(new THREE.SphereGeometry(.31,14,10,0,PI*2,0,PI*.62),lam(0x7a8aa6),0,1.74,-.04);hair.rotation.x=-.3;
+  add(new THREE.BoxGeometry(.32,.6,.06),lam(0x7a8aa6),0,1.45,-.2);
+  for(const [x,y,r]of[[-.1,1.75,.6],[.1,1.62,-.4],[0,1.3,.2],[.18,1.15,1.1]])add(new THREE.BoxGeometry(.18,.015,.02),basic(0x2a2a30),x,y,r>0?.28:.18).rotation.z=r;
+  for(const s of[-1,1])add(new THREE.BoxGeometry(.07,.02,.02),basic(0x9fb8c8),s*.1,1.73,.26);
+  const piv=new THREE.Group();piv.position.set(.34,1.0,.1);const arm=new THREE.Mesh(new THREE.BoxGeometry(.11,.11,.5),lam(0xbcc6cf));arm.position.z=.25;
+  const f=glow(0x9a7aff,.6);f.position.z=.55;piv.add(arm,f);b.add(piv);g.userData.piv=piv;return g}
+function mkKaizo(){const g=new THREE.Group(),c=lam(0x8a7a86);const body=new THREE.Mesh(new THREE.SphereGeometry(.38,10,8),c);body.scale.set(1,.8,1.2);body.position.y=.4;g.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.2,8,6),lam(0xb8a8b0));head.position.set(.08,.78,.15);g.add(head);
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(.1,.1,.55),c);arm.position.set(-.25,.45,.3);arm.rotation.y=.4;g.add(arm);g.userData.legs=[];return g}
 function mkInmin(){const g=new THREE.Group(),c=lam(0x55513f);
   const body=new THREE.Mesh(new THREE.CylinderGeometry(.16,.28,.8,8),c);body.position.y=.4;g.add(body);
   const head=new THREE.Mesh(new THREE.SphereGeometry(.15,10,8),lam(0xd8c0a0));head.position.y=.92;g.add(head);
@@ -622,13 +652,46 @@ const CH={
   s1:{name:'사(死)',desc:'순전 술식 · 에너지 구를 날림 · 맞으면 폭발(반경 2.5m, 피해 10)하고, 휘말린 상대는 주력 15를 빼앗긴 채 위원장 쪽으로 끌려옴 · 빼앗은 만큼 주력과 린민 주력이 둘 다 참',cost:25,cd:4.5,windup:.25,active:.1,recover:.3,range:[2,15],ev:[[0,F=>shoot(F,{kind:'kimSa',spd:19,dmg:10,col:0x8a0a1a,stun:.35,kim:'sa'})]]},
   s2:{name:'멸(滅)',desc:'술식 반전 · 길을 쓸고 지나가는 관통 구체 · 맞은 상대의 주력 20을 빼앗아 자기 주력과 린민 주력이 둘 다 참 · 경로의 투사체와 식신을 깔끔하게 청소 · 피해 13 · 막을 수 없음',cost:30,cd:6,windup:.4,active:.1,recover:.35,red:true,range:[3,16],ev:[[0,F=>shoot(F,{kind:'kimMyeol',spd:17,dmg:13,l:1.4,pierce:1,radius:1.2,kim:'myeol'})]]},
   s3:{name:'허식 · 핵(核)',desc:'0.7초 동안 핵분열로 주력을 증폭해 거대한 구를 쏨 · 닿거나 끝까지 날아가면 반경 20m 대폭발(피해 약 20.5 + 린민 주력 10당 약 3.7, 린민 주력을 전부 씀, 막을 수 없음) · 맞은 상대는 <b>방사능 피폭</b>: 10초 동안 초당 체력 약 1.4씩 깎임 · 터진 자리 반경 20m에 8초 동안 낙진이 남아 그 안에 있는 상대는 0.5초마다 <b>중독</b>이 1겹씩 쌓여(최대 15겹) 1겹당 초당 약 0.47씩 더 깎이고 피폭 시간이 다시 10초로 · 위원장과 같은 편은 낙진 영향 없음',cost:60,cd:16,red:true,windup:.7,active:.1,recover:.3,range:[4,18],ev:[[0,F=>{const pw=Math.floor(F.rmG||0);F.rmG=0;shoot(F,{kind:'kimNuke',spd:11,dmg:0,l:1.8,radius:1.1,kim:'nuke',pw})}]]},
-  dom:{name:'아오지 탄광',han:'阿吾地炭鑛',noBarrier:true,radius:120,sky:['#060606','#151310','#2a2620'],acc:0xc8a060,every:.6,tick:F=>{const O=opp(F);if(hit(F,O,1.5,{unb:true,seal:true,drain:KIM.mineDrain})){kimGain(F,KIM.mineDrain);mineRockFx(O)}},desc:'결계 없이 반지름 120m로 펼쳐지는 탄광 · 범위 안의 적은 <b>강제 노동</b>: 술식(비술·결계)을 쓸 수 없고 0.6초마다 주력 6을 빼앗김 · 빼앗은 만큼 주력과 린민 주력이 둘 다 참 · 결계를 닫는 영역은 0.2초 만에 무너뜨림'}}
+  dom:{name:'아오지 탄광',han:'阿吾地炭鑛',noBarrier:true,radius:120,sky:['#060606','#151310','#2a2620'],acc:0xc8a060,every:.6,tick:F=>{const O=opp(F);if(hit(F,O,1.5,{unb:true,seal:true,drain:KIM.mineDrain})){kimGain(F,KIM.mineDrain);mineRockFx(O)}},desc:'결계 없이 반지름 120m로 펼쳐지는 탄광 · 범위 안의 적은 <b>강제 노동</b>: 술식(비술·결계)을 쓸 수 없고 0.6초마다 주력 6을 빼앗김 · 빼앗은 만큼 주력과 린민 주력이 둘 다 참 · 결계를 닫는 영역은 0.2초 만에 무너뜨림'}},
+ jogo:{name:'죠고',title:'화산에서 태어난 대지의 주령',hp:100,spirit:true,mpMax:150,eff:.85,spd:6.4,r:.55,build:makeJogo,keep:6,
+  atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0xff7a1a},
+  tal:{name:'불똥',cost:8,cd:.7,fire:F=>shoot(F,{kind:'orb',spd:17,dmg:4,col:0xff7a1a})},
+  s1:{name:'화산탄',desc:'불붙은 화산탄 세 발을 부채꼴로 날림 · 한 발 피해 7',cost:22,cd:3,windup:.2,active:.1,recover:.3,range:[2,16],ev:[[0,F=>shoot(F,{kind:'orb',n:3,spread:.18,spd:20,dmg:7,col:0xff5a1a,scale:1.5,heavy:1,stun:.2})]]},
+  s2:{name:'극번 · 운',desc:'상대 머리 위로 거대한 운석을 떨어뜨림 · 1초 뒤 반경 4m 피해 28',cost:40,cd:9,windup:.5,active:.1,recover:.4,red:true,range:[0,24],ev:[[0,F=>{const O=opp(F);tele(F,O.pos.clone(),4,1,28,0xff4a1a,.8);spiritFx(F,'meteor',O.pos)}]]},
+  s3:{name:'분화',desc:'발밑에서 화산이 터져 주위 6m를 날려 버림 · 피해 15',cost:30,cd:7,windup:.3,active:.1,recover:.35,range:[0,6],ev:[[0,F=>{spiritFx(F,'erupt',F.pos);for(const T of foes(F))if(Math.hypot(T.pos.x-F.pos.x,T.pos.z-F.pos.z)<6+T.def.r)hit(F,T,15,{big:true,stun:.4,kb:9})}]]},
+  dom:{name:'개관철위산',han:'蓋棺鐵圍山',sky:['#1a0400','#4a1000','#8a2a06'],acc:0xff6a1a,every:.7,tick:F=>{const O=opp(F);hit(F,O,4,{unb:true});burst(O.pos.clone().setY(1),0xff6a1a,10,6)},desc:'용암이 끓는 화산 속 · 필중의 열기가 0.7초마다 상대를 태움'}},
+ hanami:{name:'하나미',title:'숲에서 태어난 대지의 주령',hp:135,spirit:true,armor:true,spd:6,r:.6,build:makeHanami,keep:5,
+  atk:{range:2.6,dmg:[5,5,8],wu:.08,col:0x8fd06a},
+  tal:{name:'씨앗탄',cost:8,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:16,dmg:4,col:0x8fd06a})},
+  s1:{name:'나무뿌리',desc:'상대 발밑에서 나무뿌리 셋이 솟아 묶음 · 한 곳 피해 10 · 경직 0.7초',cost:24,cd:4,windup:.25,active:.1,recover:.3,range:[0,18],ev:[[0,F=>{const O=opp(F);for(let i=0;i<3;i++)tele(F,i?around(O.pos,1.8):O.pos.clone(),1.6,.5+i*.12,10,0x6a9a3a,.7)}]]},
+  s2:{name:'꽃밭',desc:'주위 7m에 꽃을 피워 적의 전의를 꺾음 · 경직 1초 · 피해 5 · 막을 수 없음',cost:30,cd:9,windup:.3,active:.1,recover:.3,range:[0,7],ev:[[0,F=>{spiritFx(F,'bloom',F.pos);for(const T of foes(F))if(Math.hypot(T.pos.x-F.pos.x,T.pos.z-F.pos.z)<7+T.def.r)hit(F,T,5,{unb:true,stun:1})}]]},
+  s3:{name:'목령 화살',desc:'가시 돋친 나무 화살 다섯 발 · 한 발 피해 6',cost:26,cd:4.5,windup:.25,active:.1,recover:.3,range:[3,18],ev:[[0,F=>shoot(F,{kind:'orb',n:5,spread:.12,spd:22,dmg:6,col:0x6a9a3a,scale:1.2})]]},
+  dom:{name:'화원',han:'花園',sky:['#04100a','#0c2a14','#2a5a2a'],acc:0x8fd06a,every:.8,tick:F=>{const O=opp(F);hit(F,O,3,{unb:true,stun:.3});burst(O.pos.clone().setY(.4),0x6a9a3a,8,5)},desc:'꽃과 나무뿌리가 뒤덮은 숲 · 필중의 뿌리가 0.8초마다 상대를 묶음'}},
+ dagon:{name:'다곤',title:'바다에서 태어난 주령',hp:118,spirit:true,spd:5.9,r:.65,build:makeDagon,keep:7,
+  atk:{range:2.4,dmg:[4,4,7],wu:.08,col:0x5ab0ff},
+  tal:{name:'물방울',cost:8,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:16,dmg:4,col:0x5ab0ff})},
+  s1:{name:'사어',desc:'물고기 떼 여섯 마리가 상대를 쫓아감 · 한 마리 피해 4',cost:22,cd:3.5,windup:.2,active:.1,recover:.3,range:[2,22],ev:[[0,F=>shoot(F,{kind:'orb',n:6,spread:.25,spd:14,dmg:4,col:0x5ab0ff,homing:2.2,l:2.6})]]},
+  s2:{name:'물기둥',desc:'상대 발밑에서 물기둥이 솟음 · 반경 2.5m 피해 16 · 경직 0.6초',cost:28,cd:6,windup:.3,active:.1,recover:.3,range:[0,20],ev:[[0,F=>{const O=opp(F);tele(F,O.pos.clone(),2.5,.6,16,0x3a8aff,.6)}]]},
+  s3:{name:'해일',desc:'앞으로 거대한 물결을 밀어 보냄 · 관통 · 피해 18 · 막을 수 없음',cost:35,cd:8,windup:.45,active:.1,recover:.4,red:true,range:[2,16],ev:[[0,F=>shoot(F,{kind:'wave',spd:18,dmg:18,col:0x3a8aff,l:1.1,pierce:1,heavy:1,scale:2.4,radius:1.6})]]},
+  dom:{name:'탕온평선',han:'蕩蘊平線',sky:['#e6f4ff','#7ac8f0','#2a7ac8'],acc:0x5ab0ff,every:.4,tick:F=>{const O=opp(F);hit(F,O,2.2,{unb:true});burst(O.pos.clone().setY(1),0x5ab0ff,6,6)},desc:'끝없는 해변 · 필중의 물고기 떼가 0.4초마다 상대를 물어뜯음'}},
+ mahito:{name:'마히토',title:'사람에게서 태어난 주령',hp:110,spirit:true,spd:6.7,r:.5,build:makeMahito,keep:2.4,meleeMul:1.1,
+  atk:{range:2.4,dmg:[5,5,8],wu:.07,col:0x9ab8c8},
+  tal:{name:'영혼 조각',cost:8,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:16,dmg:4,col:0x9a7aff})},
+  s1:{name:'무위전변',desc:'손으로 영혼을 만져 형태를 비틂 · 앞 2.6m · 피해 18 · 막을 수 없음, 무하한도 뚫음',cost:28,cd:6,windup:.3,active:.15,recover:.35,red:true,range:[0,2.6],ev:[[0,F=>soulTouch(F)]]},
+  s2:{name:'개조인간',desc:'영혼을 비튼 개조인간 넷을 풀어놓음 · 6초 동안 적을 덮쳐 때림(피해 4)',cost:28,cd:10,windup:.3,active:.1,recover:.3,range:[0,99],ev:[[0,F=>{for(let i=0;i<4;i++)summon(F,'kaizo',F.pos.x,F.pos.z,{i})}]]},
+  s3:{name:'다중 혼체',desc:'팔을 칼날로 바꿔 파고들어 벰 · 피해 15 · 흑섬 가능',cost:22,cd:4,windup:.2,active:.35,recover:.35,range:[3,11],start:F=>lunge(F,21),contact:15},
+  dom:{name:'자폐원돈과',han:'自閉圓頓裹',sky:['#0a0614','#2a1a3a','#5a4a7a'],acc:0x9a7aff,every:1,tick:F=>{const O=opp(F);hit(F,O,7,{unb:true,stun:.4});burst(O.pos.clone().setY(1.1),0x9a7aff,14,6)},desc:'손이 가득한 영혼의 공간 · 1초마다 필중 무위전변'}}
 };
 const HP_MULT=3; // 판이 너무 빨리 끝나지 않게 모든 캐릭터 체력 3배
 for(const id in CH)CH[id].hp*=HP_MULT;
 const IDS=Object.keys(CH);
 CH.kashimo.passive='<b>전기를 띤 주력</b> 카시모의 공격에 맞으면 전하가 묻음(최대 4, 6초 유지) · 방전·전도는 전하를 따라 막을 수 없이 꽂힘 · <b>반전술식을 못 씀</b>(반전술식·뇌 파괴 불가)';
 CH.kashimo.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1: 방전 · 주위(주력 35)';
+const SPIRIT_TXT='<b>주령의 몸</b> 반전술식 대신 주력으로 몸을 고쳐서 회복 출력이 떨어지지 않음 · <b>주령 연대</b> 같은 팀에 다른 주령이 있으면 주력 자연 회복 1.5배';
+CH.jogo.passive=SPIRIT_TXT;
+CH.hanami.passive=SPIRIT_TXT+' · <b>단단한 몸</b> 경직 무시 · <b>대지의 숨결</b> 체력이 초당 최대 체력의 0.5%씩 저절로 참';
+CH.dagon.passive=SPIRIT_TXT;
+CH.mahito.passive=SPIRIT_TXT+' · <b>영혼의 형태</b> 영혼을 직접 치지 않는 공격은 피해 40% 감소(이타도리의 공격, 흑섬, 영역의 필중은 그대로)';
 CH.kim.passive='<b>백두혈통</b> 린민의 주력이 몸에 둘러져 받는 피해를 대신 막음(린민 주력 최대 60, 천천히 차오름 · 사·멸·아오지 탄광으로 빼앗은 주력이 주력과 린민 주력 둘 다로 들어옴) · 린민 주력이 바닥나면 <b>인민 이탈</b>로 8초 동안 다시 안 쌓임 · <b>린민 식신</b> 20초마다 저절로 5명이 나와 7초 동안 적에게 달려들어 때리고(피해 3) 날아오는 투사체를 대신 맞아 막아 줌';
 CH.hakari.passive='<b>거친 주력</b> 막아도 피해의 30%가 들어감(보통 20%) · <b>대박</b> 영역에서 슬롯이 맞으면 11초 동안 무한 주력·자동 반전술식·쓰러지지 않음, 영역을 써도 술식이 타지 않음';
 CH.hakari.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1: 셔터 연쇄(주력 32)';
@@ -943,6 +1006,16 @@ function infHit(T,amt){T.infG=Math.max(0,T.infG-amt*(T.def.six?.8:1)*zoneEff(T))
 const LAC={max:5,dur:5,dps:.7};
 function lacerate(T){if(!(T.lacT>0))T.lacN=0;const before=T.lacN|0;T.lacN=Math.min(LAC.max,before+1);T.lacT=LAC.dur;
   if(T.lacN>before&&(!T.lacPop||S.t-T.lacPop>.6)){T.lacPop=S.t;pop(T,'열상 ×'+T.lacN,'#ff5a6a')}burst(T.pos.clone().setY(1.1),0xb0101a,4,3)}
+// ===== 주령 팀 =====
+const MAHITO_SOUL=.6;
+const spiritBond=F=>F.def.spirit&&S.f.some(T=>T!==F&&T.side===F.side&&T.def.spirit)?1.5:1;
+function soulTouch(F){spiritFx(F,'touch',F.pos.clone().addScaledVector(fwd(F.face),1.4));
+  for(const T of foes(F)){const d=T.pos.clone().sub(F.pos).setY(0),l=d.length();if(l<2.6+T.def.r&&(l<.9||d.normalize().dot(fwd(F.face))>.2))hit(F,T,18,{unb:true,big:true,stun:.6})}}
+function spiritFx(F,t,p,remote){const c=p.clone().setY(0);if(!remote&&S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'spiritFx',a:{t,x:+c.x.toFixed(2),z:+c.z.toFixed(2)}});
+  if(t==='meteor'){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(1.4),lam(0x3a2418));r.add(glow(0xff5a0a,4));r.position.set(c.x,22,c.z);scene.add(r);S.fx.push({m:r,mat:r.material,t:0,dur:1,fall:true,y0:22,dispose:true,disposeGeo:true});setTimeout(()=>{burst(c.clone().setY(1),0xff6a1a,50,13);burst(c.clone().setY(1),0x3a2418,30,9);S.shake=Math.max(S.shake,.5);snd(60,.8,'sawtooth',.08,-30)},950)}
+  else if(t==='erupt'){burst(c.clone().setY(.5),0xff5a0a,60,14);burst(c.clone().setY(1),0x2a1a14,30,8);const col=new THREE.Mesh(new THREE.CylinderGeometry(1.2,2,8,12,1,true),basic(0xff6a1a,{transparent:true,opacity:.75,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));col.position.copy(c).setY(4);scene.add(col);S.fx.push({m:col,mat:col.material,t:0,dur:.7,dispose:true,disposeGeo:true});S.shake=Math.max(S.shake,.4);snd(80,.6,'sawtooth',.07,-40)}
+  else if(t==='bloom'){for(let i=0;i<36;i++){const a=Math.random()*PI*2,r=Math.sqrt(Math.random())*7;burst(c.clone().add(new V3(Math.cos(a)*r,.3,Math.sin(a)*r)),[0xffb0d0,0xfff0a0,0xffffff,0x8fd06a][i%4],2,2)}snd(900,.4,'sine',.03,300)}
+  else if(t==='touch'){burst(c.clone().setY(1.1),0x9a7aff,22,6);burst(c.clone().setY(1.1),0x101018,10,4);snd(200,.3,'sine',.05,-120)}}
 // ===== 위원장 (패러디) =====
 const KIM={rmMax:60,rmStart:30,regen:1.2,brk:8,saDrain:15,myeolDrain:20,saR:2.5,mineDrain:6,inmin:5,nukeR:20,radT:10,radBase:1.5*.93,radPer:.5*.93,nukeMul:.93,radMax:15,inminEvery:20,nukeDmg:22,falloutT:8,falloutDps:3};
 function kimGain(F,n){if(F.id!=='kim'||F.remote)return;F.mp=Math.min(MPX(F),F.mp+n);if(!(F.rmBrk>0))F.rmG=Math.min(KIM.rmMax,(F.rmG||0)+n)} // 빼앗은 주력은 자기 주력과 린민 주력 둘 다로
@@ -1039,6 +1112,7 @@ function applyHitInSpace(Aa,T,dmg,o={}){
   if(o.domFx&&T.sdT>0){sdDamage(T,dmg*.5);if(!T.sdPop||S.t-T.sdPop>.6){T.sdPop=S.t;pop(T,'간이 영역','#e7e4da')}burst(T.pos.clone().setY(.6),0xe7e4da,6,4);snd(900,.06,'triangle',.03,-300);return 'block'}
   // 영역 안: 전개한 사람의 공격은 전부 필중. 간이 영역이 켜져 있으면 필중만 사라지고 공격은 그대로 들어옴
   if(Aa&&sureHit(Aa,T)&&!T.def.noCE){if(T.sdT>0){if(o.unb){o=Object.assign({},o,{unb:false});if(!T.sdPop||S.t-T.sdPop>.8){T.sdPop=S.t;pop(T,'필중 무효','#e7e4da')}}}else o=Object.assign({},o,{unb:true})}
+  if(T.id==='mahito'&&Aa&&Aa.id!=='yuji'&&Aa.id!=='mahito'&&!o.domFx&&!o.bf&&!DOMTAG)dmg*=MAHITO_SOUL; // 영혼을 직접 치지 않으면 덜 들어감
   if(!o.unb&&infOn(T)&&!(Aa&&Aa.ampOn&&!o.proj)){infHit(T,dmg*2.2);pop(T,'무하한','#9fd0ff');snd(1600,.1,'sine',.03,-900);
     burst(T.pos.clone().setY(1.1).addScaledVector(Aa?Aa.pos.clone().sub(T.pos).setY(0).normalize():fwd(T.face),1.1),0x9fd0ff,8,3);return 'block'}
   if(T.counterT>0&&!o.unb&&!o.proj&&Aa&&Aa.state!=='ko'){T.counterT=0;T.tg.visible=false;const d=T.pos.clone().sub(Aa.pos).setY(0).normalize();burst(T.pos.clone().setY(1),0x6fb4ff,16,6);
@@ -1614,13 +1688,14 @@ function summon(F,type,x,z,o={}){
   if(S.mode==='net'&&!F.remote&&!(type==='rabbit'&&o.i))sendEvt({k:'fx',n:'shiki',a:{t:type,x:+x.toFixed(2),z:+z.toFixed(2),w:o.white?1:0,i:o.i|0,id:type==='fusion'?o.id:undefined,r:type==='fusion'?S.round:undefined}});
   const pos=new V3(x,0,z);let m,k;
   if(type==='dog'){m=mkDog(o.white);k={life:6,cd:.4,hp:1}}
+  else if(type==='kaizo'){m=mkKaizo();const a=(o.i|0)/4*PI*2+Math.random()*.5,r=1.2+Math.random()*.8;pos.x+=Math.cos(a)*r;pos.z+=Math.sin(a)*r;clampV(pos,A);k={life:6,cd:.4+Math.random()*.4,hp:1,ph:Math.random()*6,dmg:4,spd:9.5}}
   else if(type==='inmin'){m=mkInmin();const a=(o.i|0)/KIM.inmin*PI*2+Math.random()*.4,r=1.4+Math.random()*.8;pos.x+=Math.cos(a)*r;pos.z+=Math.sin(a)*r;clampV(pos,A);k={life:7,cd:.5+Math.random()*.4,hp:1,ph:Math.random()*6}}
   else if(type==='fusion'){m=mkFusion();k={life:FUSION.life,hp:FUSION.hp,netId:o.id,face:Math.atan2(opp(F).pos.x-x,opp(F).pos.z-z),cds:{bite:.4,snake:1,tongue:.65,water:1.6},attack:null,animT:0,animKind:'',walking:0}}
   else if(type==='nue'){m=mkNue();pos.y=3.5;k={life:2.2,phase:0,hp:1}}
   else if(type==='ele'){m=mkEle();const O=opp(F);pos.set(O.pos.x,7.5,O.pos.z);k={life:1.5,hp:99}}
   else{m=mkRabbit();const a=Math.random()*PI*2,r=.8+Math.random()*1.8;pos.x+=Math.cos(a)*r;pos.z+=Math.sin(a)*r;clampV(pos,A);k={life:2.6+Math.random()*.6,hp:1,ph:Math.random()*6}}
   Object.assign(k,{type,m,pos,own:F,space:effectSpace(F),t:0,dom:DOMTAG});m.position.copy(pos);if(type==='dog')m.position.y=-.9;scene.add(m);S.shiki.push(k);
-  burst(new V3(x,.15,z),type==='inmin'?0xd8202a:0x05060c,type==='fusion'?32:type==='rabbit'||type==='inmin'?3:14,5);if(type!=='rabbit'&&type!=='inmin')burst(new V3(x,.15,z),0x5a6aff,6,4);if(type==='fusion')snd(110,.7,'sawtooth',.055,-50);return k}
+  burst(new V3(x,.15,z),type==='inmin'?0xd8202a:type==='kaizo'?0x9a7aff:0x05060c,type==='fusion'?32:type==='rabbit'||type==='inmin'||type==='kaizo'?3:14,5);if(type!=='rabbit'&&type!=='inmin'&&type!=='kaizo')burst(new V3(x,.15,z),0x5a6aff,6,4);if(type==='fusion')snd(110,.7,'sawtooth',.055,-50);return k}
 function disposeFusion(k){if(k.type!=='fusion'||k.disposed)return;k.disposed=true;const mats=new Set();k.m.traverse(o=>{if(o.isMesh)mats.add(o.material)});for(const mat of mats)mat.dispose?.()}
 function killShiki(k){if(k.dead)return;k.dead=true;scene.remove(k.m);disposeFusion(k);burst(k.m.position.clone().setY(Math.max(.4,k.m.position.y)),0x05060c,12,5);
   if(k.type==='fusion'){k.own.fusionGone=Math.max(k.own.fusionGone,k.netId);if(S.mode==='net'&&!k.own.remote)sendEvt({k:'fx',n:'fusionGone',a:{id:k.netId,r:S.round}})}}
@@ -1683,10 +1758,10 @@ function updateShikiInSpace(dt){
       m.position.set(k.pos.x,Math.min(0,-.9+k.t*5),k.pos.z);m.rotation.y=Math.atan2(d.x,d.z);
       m.userData.legs.forEach((g,i)=>g.rotation.x=Math.sin(k.t*16+(i%2)*PI)*.6);
       k.cd-=dt;if(l<O.def.r+1.3&&k.cd<=0&&O.state!=='ko'&&k.t>.25){k.cd=1.1;m.position.addScaledVector(d,.35);burst(O.pos.clone().setY(.9),0xf2f0f5,5,4);snd(320,.08,'sawtooth',.03,-200);hit(F,O,4,{proj:true,space:k.space,domFx:!!k.dom})}}
-    else if(k.type==='inmin'){const d=O.pos.clone().sub(k.pos).setY(0),l=d.length()||.01;d.divideScalar(l);
-      if(l>O.def.r+.8&&O.state!=='ko')k.pos.addScaledVector(d,Math.min(l-O.def.r-.75,8.5*dt));clampV(k.pos,A);
+    else if(k.type==='inmin'||k.type==='kaizo'){const d=O.pos.clone().sub(k.pos).setY(0),l=d.length()||.01;d.divideScalar(l);
+      if(l>O.def.r+.8&&O.state!=='ko')k.pos.addScaledVector(d,Math.min(l-O.def.r-.75,(k.spd||8.5)*dt));clampV(k.pos,A);
       m.position.set(k.pos.x,Math.abs(Math.sin(k.t*12+k.ph))*.12,k.pos.z);m.rotation.y=Math.atan2(d.x,d.z);
-      k.cd-=dt;if(l<O.def.r+1.1&&k.cd<=0&&O.state!=='ko'&&k.t>.3){k.cd=1;burst(O.pos.clone().setY(.9),0xd8c0a0,4,3);snd(260,.06,'square',.025,-120);hit(F,O,3,{proj:true,space:k.space,domFx:!!k.dom})}}
+      k.cd-=dt;if(l<O.def.r+1.1&&k.cd<=0&&O.state!=='ko'&&k.t>.3){k.cd=1;burst(O.pos.clone().setY(.9),0xd8c0a0,4,3);snd(260,.06,'square',.025,-120);hit(F,O,k.dmg||3,{proj:true,space:k.space,domFx:!!k.dom})}}
     else if(k.type==='nue'){const w=m.userData.wings;w[0].rotation.z=Math.sin(k.t*14)*.6;w[1].rotation.z=-Math.sin(k.t*14)*.6;
       if(k.phase===0){const to=O.pos.clone().setY(4);k.pos.lerp(to,Math.min(1,dt*3.2));m.lookAt(to.x,4,to.z);
         if(k.t>.9){k.phase=1;k.at=O.pos.clone();m.userData.zap.visible=true;if(!F.remote){DOMTAG=!!k.dom;strike(F,k.at,1.8,15);DOMTAG=false};snd(1400,.2,'sawtooth',.03,-900)}}
@@ -1778,6 +1853,10 @@ function domainTheme(F){const D=F.def.dom,g=new THREE.Group();const add=(geo,col
   }else if(F.id==='hakari'){for(const s of[-1,1]){add(new THREE.BoxGeometry(3,.6,70),0x263e3b,s*19,.3,0);for(let i=0;i<7;i++){add(new THREE.BoxGeometry(.35,9,.35),0x99b2ab,s*20,4.5,i*8-24);add(new THREE.BoxGeometry(.1,.18,4),0xb7ffdf,s*19.5,8,i*8-24)}}
     for(let i=0;i<3;i++){add(new THREE.BoxGeometry(3,5,.2),0x19392e,(i-1)*4,2.5,-23);add(new THREE.TorusGeometry(.7,.12,6,24),0x7dffb0,(i-1)*4,3,-22.8)}g.userData.theme='subway-jackpot';
   }else if(F.id==='choso'){for(let i=0;i<18;i++){const a=i*2.4,r=18+i%4*3;add(new THREE.SphereGeometry(.4+i%3*.2,8,6),i%2?0x860f27:0xca2947,Math.cos(a)*r,2+i%6,Math.sin(a)*r)}g.userData.theme='blood-sea';
+  }else if(F.id==='jogo'){for(let i=0;i<8;i++){const a=i*PI/4,r=24+i%3*4;const v=add(new THREE.ConeGeometry(5+i%3,9+i%4*2,8),0x2a160e,Math.cos(a)*r,4,Math.sin(a)*r);add(new THREE.SphereGeometry(1.2,8,6),0xff5a0a,Math.cos(a)*r,9+i%4,Math.sin(a)*r)}g.userData.theme='volcano';
+  }else if(F.id==='hanami'){for(let i=0;i<14;i++){const a=i*2.3,r=18+i%4*4;add(new THREE.CylinderGeometry(.5,.8,10,7),0x4a3420,Math.cos(a)*r,5,Math.sin(a)*r);add(new THREE.SphereGeometry(3,8,6),i%2?0x3a7a2a:0x5a9a3a,Math.cos(a)*r,11,Math.sin(a)*r)}g.userData.theme='forest';
+  }else if(F.id==='dagon'){add(new THREE.BoxGeometry(200,.2,60),0x2a7ac8,0,.1,-60);add(new THREE.BoxGeometry(200,.15,30),0xf0e2b8,0,.05,-18);for(let i=0;i<6;i++)add(new THREE.ConeGeometry(.3,4,6),0x6a4a2a,-30+i*12,2,-26);g.userData.theme='beach';
+  }else if(F.id==='mahito'){for(let i=0;i<16;i++){const a=i*PI/8,r=20;const h=add(new THREE.BoxGeometry(1.2,6+i%3*2,.6),0xbcc6cf,Math.cos(a)*r,4,Math.sin(a)*r);h.rotation.y=-a;for(let j=0;j<4;j++)add(new THREE.BoxGeometry(.22,1.4,.22),0xbcc6cf,Math.cos(a)*r+Math.cos(a+PI/2)*(j-1.5)*.32,8+i%3*2,Math.sin(a)*r+Math.sin(a+PI/2)*(j-1.5)*.32)}g.userData.theme='hands';
   }else{for(let i=0;i<10;i++){const a=i*PI/5,r=22;const col=i%2?D.acc:0x1a1728;add(new THREE.BoxGeometry(.35,12,.35),col,Math.cos(a)*r,6,Math.sin(a)*r)}g.userData.theme='ritual-'+F.id}
   return g;
 }
@@ -1952,9 +2031,9 @@ function stepFighter(F,I,dt){
   if(enemyDom(F)&&!domOf(F)&&!(F.sdT>0)&&!F.def.noCE)dt*=.55; // 토우지는 결계가 인식하지 못해 느려지지 않음
   if(F.rctBlockT>0)F.rctBlockT-=dt;
   F.rcting=!!I.rct&&F.mp>1&&F.hp<F.def.hp&&!F.def.noRCT&&!F.def.noCE&&!(F.rctBlockT>0);
-  if(F.rcting){F.mp=Math.max(0,F.mp-RCT.cost*costMul(F)*zoneEff(F)*dt);F.hp=Math.min(F.def.hp,F.hp+F.def.hp*RCT.rate*F.rctOut*zoneRct(F)*dt);F.rctOut=Math.max(RCT.min,F.rctOut-RCT.fade*dt);
+  if(F.rcting){F.mp=Math.max(0,F.mp-RCT.cost*costMul(F)*zoneEff(F)*dt);F.hp=Math.min(F.def.hp,F.hp+F.def.hp*RCT.rate*F.rctOut*zoneRct(F)*dt);F.rctOut=F.def.spirit?1:Math.max(RCT.min,F.rctOut-RCT.fade*dt);
     if(Math.random()<.35)burst(F.pos.clone().setY(.4+Math.random()*1.5),0xb8ffd8,1,2);if(!F.rcSnd||S.t-F.rcSnd>.5){F.rcSnd=S.t;snd(660,.4,'sine',.025,220)}}
-  else F.mp=Math.min(MPX(F),F.mp+(inAnyDomain(F)?0:4*(F.def.six?1.25:1))*dt);
+  else F.mp=Math.min(MPX(F),F.mp+(inAnyDomain(F)?0:4*(F.def.six?1.25:1)*spiritBond(F))*dt);if(F.id==='hanami'&&F.hp<F.def.hp)F.hp=Math.min(F.def.hp,F.hp+F.def.hp*.005*dt);
   F.inv=Math.max(0,F.inv-dt);F.stag=Math.max(0,F.stag-dt);F.dashCd-=dt;for(const k in F.cd)F.cd[k]-=dt;if(F.counterT>0){F.counterT-=dt;if(F.counterT<=0)F.tg.visible=false}F.emp=Math.max(0,F.emp-dt);
   if(F.flash>0){F.flash-=dt;if(F.flash<=0)setFlash(F,false)}
   if(F.zoneT>0){F.zoneT-=dt;if(F.zoneT<=0)F.zone=0}
@@ -2324,6 +2403,7 @@ function handleEvt(R,e){const L=S.f[S.me];
 function netFx(R,n,a,space=spaceOf(R)){const before=REMOTE_FX_SPACE;REMOTE_FX_SPACE=space;try{return inDrawSpace(space,()=>netFxInSpace(R,n,a))}finally{REMOTE_FX_SPACE=before}}
 function netFxInSpace(R,n,a){if(!a||typeof a!=='object')return;
   if(n==='bloodNova'&&R.id==='choso')supernova(R,a);
+  if(n==='spiritFx'&&R.def.spirit&&['meteor','erupt','bloom','touch'].includes(a.t))spiritFx(R,a.t,new V3(num(a.x,-A,A),0,num(a.z,-A,A)),true);
   if(n==='bloodTide'&&R.id==='choso')bloodTideFx(new V3(num(a.x,-A,A),0,num(a.z,-A,A)));
   else if(n==='bloodErupt'&&R.id==='choso')eruptBlood(R,a);
   else if(n==='shoot'){if(!['tal','orb','wave','chain','rock','purple','net','world','bloodDisc','kimSa','kimMyeol','kimNuke'].includes(a.kind)||a.kind==='world'&&R.id!=='yeom'||a.kind==='bloodDisc'&&R.id!=='choso'||a.kind.startsWith('kim')&&R.id!=='kim')return;
@@ -2339,7 +2419,7 @@ function netFxInSpace(R,n,a){if(!a||typeof a!=='object')return;
   else if(n==='shiki'&&a.t==='fusion'&&R.id==='megumi'){summon(R,'fusion',num(a.x,-A,A),num(a.z,-A,A),{id:a.id,r:a.r})}
   else if(n==='fusionGone'&&R.id==='megumi'&&a.r===S.round&&Number.isInteger(a.id)){R.fusionGone=Math.max(R.fusionGone,num(a.id,0,1e9));for(const k of S.shiki)if(!k.dead&&k.own===R&&k.type==='fusion'&&k.netId<=R.fusionGone)killShiki(k)}
   else if(n==='fusionAttack'&&R.id==='megumi'&&a.r===S.round&&['bite','snake','tongue','water'].includes(a.kind)){const k=S.shiki.find(k=>!k.dead&&k.own===R&&k.type==='fusion'&&k.netId===a.id);if(k)fusionAttackFx(k,a.kind,new V3(num(a.x,-A,A),0,num(a.z,-A,A)))}
-  else if(n==='shiki'){if(['dog','nue','ele','rabbit','inmin'].includes(a.t))for(let i=0;i<(a.t==='rabbit'?18:1);i++)summon(R,a.t,num(a.x,-EDGE,EDGE),num(a.z,-EDGE,EDGE),{white:!!a.w,i})}
+  else if(n==='shiki'){if(['dog','nue','ele','rabbit','inmin','kaizo'].includes(a.t))for(let i=0;i<(a.t==='rabbit'?18:1);i++)summon(R,a.t,num(a.x,-EDGE,EDGE),num(a.z,-EDGE,EDGE),{white:!!a.w,i})}
   else if(n==='dispel')dispelRemote(R);
   else if(n==='bolt')boltFx(new V3(num(a.x1,-EDGE,EDGE),num(a.y1,0,30),num(a.z1,-EDGE,EDGE)),new V3(num(a.x2,-EDGE,EDGE),1.1,num(a.z2,-EDGE,EDGE)),false);
   else if(n==='shutter')shutterFx(new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.a,-10,10));
