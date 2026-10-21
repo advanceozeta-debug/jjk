@@ -619,17 +619,17 @@ const CH={
  kim:{name:'김정은',title:'린민의 주력을 두른 독재자 (패러디)',hp:110,spd:6.2,r:.55,build:makeKim,keep:5,rm:true,
   atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0xd8202a},
   tal:{name:'린민탄',cost:10,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:15,dmg:4,col:0xd8202a})},
-  s1:{name:'사(死)',desc:'순전 술식 · 에너지 구를 날림 · 맞으면 폭발(반경 2.5m, 피해 10)하고, 휘말린 상대는 주력 15를 빼앗긴 채 위원장 쪽으로 끌려옴 · 빼앗은 주력은 린민 주력으로',cost:25,cd:4.5,windup:.25,active:.1,recover:.3,range:[2,15],ev:[[0,F=>shoot(F,{kind:'kimSa',spd:19,dmg:10,col:0x8a0a1a,stun:.35,kim:'sa'})]]},
-  s2:{name:'멸(滅)',desc:'술식 반전 · 길을 쓸고 지나가는 관통 구체 · 맞은 상대의 주력 20을 빼앗아 린민 주력으로 · 경로의 투사체와 식신을 깔끔하게 청소 · 피해 13 · 막을 수 없음',cost:30,cd:6,windup:.4,active:.1,recover:.35,red:true,range:[3,16],ev:[[0,F=>shoot(F,{kind:'kimMyeol',spd:17,dmg:13,l:1.4,pierce:1,radius:1.2,kim:'myeol'})]]},
+  s1:{name:'사(死)',desc:'순전 술식 · 에너지 구를 날림 · 맞으면 폭발(반경 2.5m, 피해 10)하고, 휘말린 상대는 주력 15를 빼앗긴 채 위원장 쪽으로 끌려옴 · 빼앗은 만큼 주력과 린민 주력이 둘 다 참',cost:25,cd:4.5,windup:.25,active:.1,recover:.3,range:[2,15],ev:[[0,F=>shoot(F,{kind:'kimSa',spd:19,dmg:10,col:0x8a0a1a,stun:.35,kim:'sa'})]]},
+  s2:{name:'멸(滅)',desc:'술식 반전 · 길을 쓸고 지나가는 관통 구체 · 맞은 상대의 주력 20을 빼앗아 자기 주력과 린민 주력이 둘 다 참 · 경로의 투사체와 식신을 깔끔하게 청소 · 피해 13 · 막을 수 없음',cost:30,cd:6,windup:.4,active:.1,recover:.35,red:true,range:[3,16],ev:[[0,F=>shoot(F,{kind:'kimMyeol',spd:17,dmg:13,l:1.4,pierce:1,radius:1.2,kim:'myeol'})]]},
   s3:{name:'허식 · 핵(核)',desc:'0.7초 동안 핵분열로 주력을 증폭해 거대한 구를 쏨 · 닿거나 끝까지 날아가면 반경 20m 대폭발(피해 22 + 린민 주력 10당 4, 린민 주력을 전부 씀, 막을 수 없음) · 터진 자리 반경 20m에 8초 동안 낙진이 남아 위원장 자신을 포함해 안에 있으면 초당 피해 3',cost:60,cd:16,red:true,windup:.7,active:.1,recover:.3,range:[4,18],ev:[[0,F=>{const pw=Math.floor(F.rmG||0);F.rmG=0;shoot(F,{kind:'kimNuke',spd:11,dmg:0,l:1.8,radius:1.1,kim:'nuke',pw})}]]},
-  dom:{name:'아오지 탄광',han:'阿吾地炭鑛',noBarrier:true,radius:120,sky:['#060606','#151310','#2a2620'],acc:0xc8a060,every:.6,tick:F=>{const O=opp(F);if(hit(F,O,1.5,{unb:true,seal:true,drain:KIM.mineDrain})){kimGain(F,KIM.mineDrain);mineRockFx(O)}},desc:'결계 없이 반지름 120m로 펼쳐지는 탄광 · 범위 안의 적은 <b>강제 노동</b>: 술식(비술·결계)을 쓸 수 없고 0.6초마다 주력 6을 빼앗김 · 빼앗은 주력은 린민 주력으로 · 결계를 닫는 영역은 0.2초 만에 무너뜨림'}}
+  dom:{name:'아오지 탄광',han:'阿吾地炭鑛',noBarrier:true,radius:120,sky:['#060606','#151310','#2a2620'],acc:0xc8a060,every:.6,tick:F=>{const O=opp(F);if(hit(F,O,1.5,{unb:true,seal:true,drain:KIM.mineDrain})){kimGain(F,KIM.mineDrain);mineRockFx(O)}},desc:'결계 없이 반지름 120m로 펼쳐지는 탄광 · 범위 안의 적은 <b>강제 노동</b>: 술식(비술·결계)을 쓸 수 없고 0.6초마다 주력 6을 빼앗김 · 빼앗은 만큼 주력과 린민 주력이 둘 다 참 · 결계를 닫는 영역은 0.2초 만에 무너뜨림'}}
 };
 const HP_MULT=3; // 판이 너무 빨리 끝나지 않게 모든 캐릭터 체력 3배
 for(const id in CH)CH[id].hp*=HP_MULT;
 const IDS=Object.keys(CH);
 CH.kashimo.passive='<b>전기를 띤 주력</b> 카시모의 공격에 맞으면 전하가 묻음(최대 4, 6초 유지) · 방전·전도는 전하를 따라 막을 수 없이 꽂힘 · <b>반전술식을 못 씀</b>(반전술식·뇌 파괴 불가)';
 CH.kashimo.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1: 방전 · 주위(주력 35)';
-CH.kim.passive='<b>백두혈통</b> 린민의 주력이 몸에 둘러져 받는 피해를 대신 막음(린민 주력 최대 60, 천천히 차오름 · 사와 아오지 탄광으로 빼앗은 주력이 쌓임) · 린민 주력이 바닥나면 <b>인민 이탈</b>로 8초 동안 다시 안 쌓임 · <b>린민 식신</b> 20초마다 저절로 5명이 나와 7초 동안 적에게 달려들어 때리고(피해 3) 날아오는 투사체를 대신 맞아 막아 줌';
+CH.kim.passive='<b>백두혈통</b> 린민의 주력이 몸에 둘러져 받는 피해를 대신 막음(린민 주력 최대 60, 천천히 차오름 · 사·멸·아오지 탄광으로 빼앗은 주력이 주력과 린민 주력 둘 다로 들어옴) · 린민 주력이 바닥나면 <b>인민 이탈</b>로 8초 동안 다시 안 쌓임 · <b>린민 식신</b> 20초마다 저절로 5명이 나와 7초 동안 적에게 달려들어 때리고(피해 3) 날아오는 투사체를 대신 맞아 막아 줌';
 CH.hakari.passive='<b>거친 주력</b> 막아도 피해의 30%가 들어감(보통 20%) · <b>대박</b> 영역에서 슬롯이 맞으면 11초 동안 무한 주력·자동 반전술식·쓰러지지 않음, 영역을 써도 술식이 타지 않음';
 CH.hakari.maxHelp='조이스틱·이동 키 ↓ 또는 뒤 대시 ▼와 함께 1: 셔터 연쇄(주력 32)';
 CH.toji.passive='<b>천여주박</b> 주력이 전혀 없음: 술식 비용 0, 반전술식·간이 영역·영역전연·뇌 파괴·결계 불가, 흑섬 불가 · 대신 이동이 빠르고 완력 배율 1.35 · 영역의 필중이 인식하지 못해 결계 공격도 막거나 피할 수 있고 결계 안에서 느려지지 않음';
@@ -943,7 +943,7 @@ function lacerate(T){if(!(T.lacT>0))T.lacN=0;const before=T.lacN|0;T.lacN=Math.m
   if(T.lacN>before&&(!T.lacPop||S.t-T.lacPop>.6)){T.lacPop=S.t;pop(T,'열상 ×'+T.lacN,'#ff5a6a')}burst(T.pos.clone().setY(1.1),0xb0101a,4,3)}
 // ===== 위원장 (패러디) =====
 const KIM={rmMax:60,rmStart:30,regen:1.2,brk:8,saDrain:15,myeolDrain:20,saR:2.5,mineDrain:6,inmin:5,nukeR:20,inminEvery:20,nukeDmg:22,falloutT:8,falloutDps:3};
-function kimGain(F,n){if(F.id!=='kim'||F.remote||F.rmBrk>0)return;F.rmG=Math.min(KIM.rmMax,(F.rmG||0)+n)}
+function kimGain(F,n){if(F.id!=='kim'||F.remote)return;F.mp=Math.min(MPX(F),F.mp+n);if(!(F.rmBrk>0))F.rmG=Math.min(KIM.rmMax,(F.rmG||0)+n)} // 빼앗은 주력은 자기 주력과 린민 주력 둘 다로
 function rmAbsorb(T,dmg){if(T.id!=='kim'||!(T.rmG>0)||!(dmg>0))return dmg;const a=Math.min(T.rmG,dmg);T.rmG-=a;
   burst(T.pos.clone().setY(1.1),0xd8202a,4,4);if(T.rmG<=0){T.rmG=0;T.rmBrk=KIM.brk;pop(T,'인민 이탈','#ff8a7a');snd(160,.4,'sawtooth',.05,-60)}return dmg-a}
 function mineRockFx(T){const c=T.pos.clone();const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.3),lam(0x2a2620));r.position.set(c.x+(Math.random()-.5),4.5,c.z+(Math.random()-.5));scene.add(r);
