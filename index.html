@@ -541,11 +541,11 @@ const CH={
   s2:{name:'누에',desc:'상대 머리 위로 날아가 번개를 두르고 내리꽂음 · 피해 15',cost:25,cd:4.5,windup:.2,active:.1,recover:.3,range:[2,16],ev:[[0,F=>summon(F,'nue',F.pos.x,F.pos.z,{})]]},
   s3:{name:'만상',desc:'상대 머리 위에 코끼리를 불러 물을 쏟아 짓누름 · 피해 18',cost:30,cd:6,windup:.35,active:.1,recover:.4,red:true,range:[0,15],ev:[[0,F=>{const c=opp(F).pos.clone();tele(F,c,2.8,.9,18,0x3a8bff,.9);summon(F,'ele',c.x,c.z,{})}]]},
   dom:{name:'감합암예정',han:'嵌合暗翳庭',sky:['#020308','#0a1020','#15203a'],acc:0x5a6aff,every:.7,tick:F=>domShiki(F),desc:'바닥이 그림자로 바뀌고 옥견과 누에가 아무 데서나 튀어나옴'}},
- nanami:{name:'나나미 켄토',title:'칠 대 삼으로 약점을 만드는 술사',hp:128,spd:6.6,r:.5,build:makeNanami,keep:2.6,ratio:true,meleeMul:1.22,bf:.02,
-  atk:{range:2.7,dmg:[6,6,8],wu:.07,col:0xe6c84a},
+ nanami:{name:'나나미 켄토',title:'칠 대 삼으로 약점을 만드는 술사',hp:128,spd:6.6,r:.5,build:makeNanami,keep:2.6,ratio:true,meleeMul:1.15,bf:.02,
+  atk:{range:2.7,dmg:[5,5,8],wu:.07,col:0xe6c84a},
   tal:{name:'둔기 투척',cost:10,cd:.9,fire:F=>shoot(F,{kind:'rock',spd:15,dmg:5})},
   s1:{name:'와해',desc:'상대 주변 바닥을 무너뜨림 · 한 곳당 피해 12',cost:26,cd:4,windup:.25,active:.1,recover:.35,red:true,range:[0,13],ev:[[0,F=>{const O=opp(F);for(let i=0;i<3;i++)tele(F,i?around(O.pos,2):O.pos.clone(),1.8,.55+i*.12,12,0xe6c84a,.5)}]]},
-  s2:{name:'칠삼 일격',desc:'선 위의 약점을 겨눠 들이받는 일격 · 기본 피해 23에 체술 +22% 적용 · 흑섬 가능',cost:22,cd:3,windup:.3,active:.35,recover:.35,range:[3,10],start:F=>lunge(F,20),contact:23},
+  s2:{name:'칠삼 일격',desc:'선 위의 약점을 겨눠 들이받는 일격 · 기본 피해 20에 체술 +15% 적용 · 흑섬 가능',cost:22,cd:3,windup:.3,active:.35,recover:.35,range:[3,10],start:F=>lunge(F,20),contact:20},
   s3:{name:'시간 외 노동',desc:'9초 동안 모든 공격 위력 1.5배 · 이동 1.15배 · 근접 물리 공격 흑섬 확률 +12%p',cost:28,cd:12,bfBonus:.12,windup:.2,active:.1,recover:.2,start:F=>{F.otT=9;pop(F,'시간 외 노동','#e6c84a');burst(F.pos.clone().setY(1.2),0xe6c84a,22,6);snd(180,.5,'sawtooth',.05,-60)},range:[0,99]},
   dom:{name:'칠삼 결계',han:'七三結界',sky:['#0a0904','#262010','#4a3a18'],acc:0xe6c84a,every:.8,tick:F=>tele(F,opp(F).pos.clone(),1.7,.5,12,0xe6c84a,.4),desc:'선 그어진 약점마다 일격이 떨어짐'}},
  choso:{name:'쵸소',title:'피를 다루는 주술사',hp:105,venom:true,spd:6.2,r:.5,build:makeChoso,keep:7,
@@ -1090,7 +1090,7 @@ function progressAct(F,dt){
 function swingHit(F,step){slashFx(F,step);attackBarrier(F,F.def.atk.range*(step===3?1.15:1),F.def.atk.dmg[step-1]);
   const big=step===3,a=F.def.atk,range=a.range*(big?1.15:1),f=fwd(F.face);
   for(const O of foes(F)){const d=O.pos.clone().sub(F.pos).setY(0),l=d.length();
-  if(l<range+O.def.r&&(l<.9||d.normalize().dot(f)>.3)){const em=F.emp>0,ratio=F.def.ratio&&step===3;if(ratio)pop(F,'7:3','#e6c84a');const r=meleeHit(F,O,a.dmg[step-1]*(em?2:1)*(ratio?2:1),{big:big||em},step);if(em){F.emp=0;pop(F,'배후 일격','var(--spirit)')}if(r==='hit'||r==='sent')S.stop=Math.max(S.stop,big?.09:.04)}}
+  if(l<range+O.def.r&&(l<.9||d.normalize().dot(f)>.3)){const em=F.emp>0,ratio=F.def.ratio&&step===3;if(ratio)pop(F,'7:3','#e6c84a');const r=meleeHit(F,O,a.dmg[step-1]*(em?2:1)*(ratio?1.8:1),{big:big||em},step);if(em){F.emp=0;pop(F,'배후 일격','var(--spirit)')}if(r==='hit'||r==='sent')S.stop=Math.max(S.stop,big?.09:.04)}}
   for(const k of S.shiki)if(!k.dead&&k.space===spaceOf(F)&&k.own.side!==F.side&&k.type!=='ele'&&Math.hypot(k.pos.x-F.pos.x,k.pos.z-F.pos.z)<range+(k.type==='fusion'?1.1:.4)){if(k.type==='fusion'){const d=k.pos.clone().sub(F.pos).setY(0),l=d.length();if(l<.9||d.normalize().dot(f)>.3)damageShiki(k,F,a.dmg[step-1]*(F.def.meleeMul||1)*(F.def.ratio&&step===3?1.7:1))}else killShiki(k)}
   for(const b of S.proj)if(b.space===spaceOf(F)&&b.own.side!==F.side&&b.kind!=='wave'&&Math.hypot(b.m.position.x-F.pos.x,b.m.position.z-F.pos.z)<range){b.l=0;burst(b.m.position,0xffffff,5,4)}
 }
