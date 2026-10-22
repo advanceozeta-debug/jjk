@@ -677,7 +677,7 @@ const CH={
  mahito:{name:'마히토',title:'사람에게서 태어난 주령',hp:110,spirit:true,spd:6.7,r:.5,build:makeMahito,keep:2.4,meleeMul:1.1,
   atk:{range:2.4,dmg:[5,5,8],wu:.07,col:0x9ab8c8},
   tal:{name:'영혼 조각',cost:8,cd:.8,fire:F=>shoot(F,{kind:'orb',spd:16,dmg:4,col:0x9a7aff})},
-  s1:{name:'무위전변',desc:'손으로 영혼을 만져 형태를 비틂 · 앞 2.6m · 피해 18 · 막을 수 없음, 무하한도 뚫음',cost:28,cd:6,windup:.3,active:.15,recover:.35,red:true,range:[0,2.6],ev:[[0,F=>soulTouch(F)]]},
+  s1:{name:'무위전변',desc:'손으로 영혼을 만져 형태를 비틂 · 앞 2.6m · 상대 최대 체력의 10% 피해 · 막을 수 없음, 무하한도 뚫음',cost:28,cd:6,windup:.3,active:.15,recover:.35,red:true,range:[0,2.6],ev:[[0,F=>soulTouch(F)]]},
   s2:{name:'개조인간',desc:'영혼을 비튼 개조인간 넷을 풀어놓음 · 6초 동안 적을 덮쳐 때림(피해 4)',cost:28,cd:10,windup:.3,active:.1,recover:.3,range:[0,99],ev:[[0,F=>{for(let i=0;i<4;i++)summon(F,'kaizo',F.pos.x,F.pos.z,{i})}]]},
   s3:{name:'다중 혼체',desc:'팔을 칼날로 바꿔 파고들어 벰 · 피해 15 · 흑섬 가능',cost:22,cd:4,windup:.2,active:.35,recover:.35,range:[3,11],start:F=>lunge(F,21),contact:15},
   dom:{name:'자폐원돈과',han:'自閉圓頓裹',sky:['#0a0614','#2a1a3a','#5a4a7a'],acc:0x9a7aff,every:1,tick:F=>{const O=opp(F);hit(F,O,7,{unb:true,stun:.4});burst(O.pos.clone().setY(1.1),0x9a7aff,14,6)},desc:'손이 가득한 영혼의 공간 · 1초마다 필중 무위전변'}}
@@ -1007,10 +1007,10 @@ const LAC={max:5,dur:5,dps:.7};
 function lacerate(T){if(!(T.lacT>0))T.lacN=0;const before=T.lacN|0;T.lacN=Math.min(LAC.max,before+1);T.lacT=LAC.dur;
   if(T.lacN>before&&(!T.lacPop||S.t-T.lacPop>.6)){T.lacPop=S.t;pop(T,'열상 ×'+T.lacN,'#ff5a6a')}burst(T.pos.clone().setY(1.1),0xb0101a,4,3)}
 // ===== 주령 팀 =====
-const MAHITO_SOUL=.6;
+const MAHITO_SOUL=.6,SOUL_TOUCH=.1; // 무위전변: 맞은 상대 최대 체력의 10%
 const spiritBond=F=>F.def.spirit&&S.f.some(T=>T!==F&&T.side===F.side&&T.def.spirit)?1.5:1;
 function soulTouch(F){spiritFx(F,'touch',F.pos.clone().addScaledVector(fwd(F.face),1.4));
-  for(const T of foes(F)){const d=T.pos.clone().sub(F.pos).setY(0),l=d.length();if(l<2.6+T.def.r&&(l<.9||d.normalize().dot(fwd(F.face))>.2))hit(F,T,18,{unb:true,big:true,stun:.6})}}
+  for(const T of foes(F)){const d=T.pos.clone().sub(F.pos).setY(0),l=d.length();if(l<2.6+T.def.r&&(l<.9||d.normalize().dot(fwd(F.face))>.2))hit(F,T,T.def.hp*SOUL_TOUCH,{unb:true,big:true,stun:.6})}}
 function spiritFx(F,t,p,remote){const c=p.clone().setY(0);if(!remote&&S.mode==='net'&&!F.remote)sendEvt({k:'fx',n:'spiritFx',a:{t,x:+c.x.toFixed(2),z:+c.z.toFixed(2)}});
   if(t==='meteor'){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(1.4),lam(0x3a2418));r.add(glow(0xff5a0a,4));r.position.set(c.x,22,c.z);scene.add(r);S.fx.push({m:r,mat:r.material,t:0,dur:1,fall:true,y0:22,dispose:true,disposeGeo:true});setTimeout(()=>{burst(c.clone().setY(1),0xff6a1a,50,13);burst(c.clone().setY(1),0x3a2418,30,9);S.shake=Math.max(S.shake,.5);snd(60,.8,'sawtooth',.08,-30)},950)}
   else if(t==='erupt'){burst(c.clone().setY(.5),0xff5a0a,60,14);burst(c.clone().setY(1),0x2a1a14,30,8);const col=new THREE.Mesh(new THREE.CylinderGeometry(1.2,2,8,12,1,true),basic(0xff6a1a,{transparent:true,opacity:.75,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));col.position.copy(c).setY(4);scene.add(col);S.fx.push({m:col,mat:col.material,t:0,dur:.7,dispose:true,disposeGeo:true});S.shake=Math.max(S.shake,.4);snd(80,.6,'sawtooth',.07,-40)}
