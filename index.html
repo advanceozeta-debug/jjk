@@ -587,6 +587,8 @@ const inClash=d=>!!S.clash&&(S.clash.a===d||S.clash.b===d);
 const sureHit=(F,T)=>{const d=domOf(F);return !!d&&!(d.breakT>0)&&!inClash(d)&&(!T||domainContains(d,T))&&(d.open||spaceOf(F)===d.space)};
 const canDom=F=>!domOf(F)&&!(F.burnT>0)&&(F.def.dom.noBarrier||foes(F).length>0);
 const ULT={kind:'ult',name:'영역 전개',cost:50,cd:20,windup:.45,active:.1,recover:.3,red:true,ev:[[0,F=>openDomain(F)]]};
+let NOGAIN=false; // 유지형 식신이 때려도 주력이 차지 않게
+const KEEP_SHIKI={dog:4,nue:3,dogHp:18,nueHp:14,nueEvery:3.2,nueDmg:10};
 const CH={
  yuji:{name:'이타도리 유지',title:'맨손으로 싸우는 그릇',hp:115,noPoison:true,spd:7,r:.5,build:makeYuji,keep:2.4,bf:.13,meleeMul:1.2,
   atk:{range:2.3,dmg:[5,5,9],wu:.06,col:0xff9a5a},
@@ -598,9 +600,9 @@ const CH={
  megumi:{name:'후시구로 메구미',title:'그림자로 식신을 부리는 술사',hp:100,spd:6.4,r:.5,build:makeMegumi,keep:5.5,
   atk:{range:2.3,dmg:[4,4,7],wu:.07,col:0x6a7aff},
   tal:{name:'탈토',cost:15,cd:6,fire:F=>{for(let i=0;i<18;i++)summon(F,'rabbit',F.pos.x,F.pos.z,{i})}},
-  s1:{name:'옥견',desc:'흑백 두 마리 개가 6초 동안 빠르게 추격 · 한 번에 피해 4 · 주력을 담은 공격에 맞으면 사라짐',cost:25,cd:6,windup:.2,active:.1,recover:.3,range:[0,14],ev:[[0,F=>{const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0).normalize(),p=new V3(-d.z,0,d.x);
-    for(const s of[-1,1]){const c=F.pos.clone().addScaledVector(p,s*1.3);summon(F,'dog',c.x,c.z,{white:s>0})}snd(220,.3,'sawtooth',.04,120)}]]},
-  s2:{name:'누에',desc:'상대 머리 위로 날아가 번개를 두르고 내리꽂음 · 피해 15',cost:25,cd:4.5,windup:.2,active:.1,recover:.3,range:[2,16],ev:[[0,F=>summon(F,'nue',F.pos.x,F.pos.z,{})]]},
+  s1:{name:'옥견',desc:'흑백 두 마리 개를 불러냄 · 주력이 초당 '+KEEP_SHIKI.dog+'씩 닳는 동안 계속 추격(한 번에 피해 4) · 주력이 바닥나거나 개 체력('+KEEP_SHIKI.dogHp+')이 다하면 사라짐 · 나와 있을 때 다시 누르면 거둬들임',cost:25,cd:3,windup:.2,active:.1,recover:.3,range:[0,14],check:F=>keepToggle(F,'dog'),checkMsg:'옥견 해제',ev:[[0,F=>{const O=opp(F),d=O.pos.clone().sub(F.pos).setY(0).normalize(),p=new V3(-d.z,0,d.x);
+    for(const s of[-1,1]){const c=F.pos.clone().addScaledVector(p,s*1.3);summon(F,'dog',c.x,c.z,{white:s>0,keep:true})}snd(220,.3,'sawtooth',.04,120)}]]},
+  s2:{name:'누에',desc:'누에를 불러냄 · 상대를 자동으로 조준해 머리 위를 맴돌다 유도 비행으로 내리꽂음(번개 피해 '+KEEP_SHIKI.nueDmg+', '+KEEP_SHIKI.nueEvery+'초마다) · 주력이 초당 '+KEEP_SHIKI.nue+'씩 닳는 동안 유지 · 주력이 바닥나거나 누에 체력('+KEEP_SHIKI.nueHp+')이 다하면 사라짐 · 나와 있을 때 다시 누르면 거둬들임',cost:25,cd:3,windup:.2,active:.1,recover:.3,range:[0,30],check:F=>keepToggle(F,'nue'),checkMsg:'누에 해제',ev:[[0,F=>summon(F,'nue',F.pos.x,F.pos.z,{keep:true})]]},
   s3:{name:'만상',desc:'상대 머리 위에 코끼리를 불러 물을 쏟아 짓누름 · 피해 18',cost:30,cd:6,windup:.35,active:.1,recover:.4,red:true,range:[0,15],ev:[[0,F=>{const c=opp(F).pos.clone();tele(F,c,2.8,.9,18,0x3a8bff,.9);summon(F,'ele',c.x,c.z,{})}]]},
   dom:{name:'감합암예정',han:'嵌合暗翳庭',sky:['#020308','#0a1020','#15203a'],acc:0x5a6aff,every:.7,tick:F=>domShiki(F),desc:'바닥이 그림자로 바뀌고 옥견과 누에가 아무 데서나 튀어나옴'}},
  nanami:{name:'나나미 켄토',title:'칠 대 삼으로 약점을 만드는 술사',hp:128,spd:6.6,r:.5,build:makeNanami,keep:2.6,ratio:true,meleeMul:1.15,bf:.02,
@@ -754,7 +756,7 @@ const BLOOD_MARK={max:999,dur:10,burst:2}; // 피 묻음: 상한 없이 쌓이�
 const GROUND_BLOOD={dur:12,max:110,spacing:3,radius:1.8,damage:6,maxHits:3};
 const SUPERNOVA={count:8,scatter:3.2,travel:.45,fuse:.9,radius:2.8,damage:5,maxHits:3};
 const FUSION={life:10,hp:65,speed:10.5,bite:{damage:8,range:2.7,cd:.95,wind:.18},snake:{damage:12,range:6,cd:2.8,wind:.3},tongue:{damage:6,range:9,cd:4,wind:.32},water:{damage:14,range:3.4,cd:3.8,wind:.42}};
-const MEGUMI_MAX={s1:Object.assign({},CH.megumi.s1,{name:'감합명수 상악',desc:'옥견 혼·오로치·가마·만상을 합친 식신 · 10초간 추격 물기·뱀 공격·혀 속박·물 충격파 · 식신 체력 65',cost:55,cd:14,windup:.65,recover:.4,red:true,maxOutput:true,range:[0,18],ev:[[0,F=>summon(F,'fusion',F.pos.x,F.pos.z,{})]]})};
+const MEGUMI_MAX={s1:Object.assign({},CH.megumi.s1,{check:null,checkMsg:null,name:'감합명수 상악',desc:'옥견 혼·오로치·가마·만상을 합친 식신 · 10초간 추격 물기·뱀 공격·혀 속박·물 충격파 · 식신 체력 65',cost:55,cd:14,windup:.65,recover:.4,red:true,maxOutput:true,range:[0,18],ev:[[0,F=>summon(F,'fusion',F.pos.x,F.pos.z,{})]]})};
 const KASHIMO_MAX={s1:Object.assign({},CH.kashimo.s1,{name:'방전 · 주위',desc:'몸에서 사방으로 방전 · 반경 7m 안의 모든 적 · 피해 10+전하당 3 · 막을 수 없음 · 전하 소모',cost:35,maxOutput:true,windup:.3,range:[0,7],ev:[[0,F=>dischargeAround(F)]]})};
 const HAKARI_MAX={s1:Object.assign({},CH.hakari.s1,{name:'셔터 연쇄',desc:'상대 위치에 셔터를 세 번 잇달아 내리침 · 한 번에 피해 9',cost:32,maxOutput:true,windup:.3,active:.5,ev:[[0,F=>shutter(F,opp(F).pos.clone(),9)],[.22,F=>shutter(F,opp(F).pos.clone(),9)],[.44,F=>shutter(F,opp(F).pos.clone(),9)]]})};
 const TOJI_MAX={s2:Object.assign({},CH.toji.s2,{name:'천역모 투척',desc:'천역모를 던짐 · 피해 14 · 맞은 상대의 술식을 전부 강제 해제',maxOutput:true,windup:.25,active:.1,range:[3,24],start:null,contact:0,ev:[[0,F=>shoot(F,{kind:'orb',spd:30,dmg:14,col:0xb08850,nullify:1,heavy:1})]]})};
@@ -969,7 +971,7 @@ function around(c,r){const a=Math.random()*PI*2;const v=c.clone();v.x+=Math.cos(
 function makeFighter(side,id,human){
   const def=CH[id],m=def.build();regMats(m);scene.add(m);
   const F={side,id,def,human,m,keyboardSkill:'s1',castSkill:null,castStamp:null,domainSpace:'',spaceVersion:0,domainSeq:0,domainGone:0,netStamp:0,netSerial:0,pos:new V3(0,0,side?-5:5),face:side?0:PI,hp:def.hp,mp:def.noCE?0:def.mpMax||100,state:'free',act:null,t:0,inv:0,stag:0,guard:false,guardAt:-9,parryAt:-9,aiParry:false,
-    dashT:0,dashCd:0,dashDir:new V3(),kb:new V3(),lv:null,hitOnce:false,combo:0,lastEnd:-9,queued:false,sukunaHits:0,sukunaPending:{},bfPending:{},purpleUsed:0,purpleSeen:0,purplePop:-9,cd:{tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0},infG:INF_MAX,infBrk:0,infLast:-9,ampOn:false,rctOut:1,counterT:0,sdT:0,sdHit:0,zoneT:0,zone:0,bloodN:0,bloodT:0,bloodId:0,bloodVersion:0,bloodCast:0,bloodCastSeen:0,fusionSeq:0,fusionGone:0,emp:0,pull:null,flash:0,koT:0,
+    dashT:0,dashCd:0,dashDir:new V3(),kb:new V3(),lv:null,hitOnce:false,combo:0,lastEnd:-9,queued:false,sukunaHits:0,sukunaPending:{},bfPending:{},purpleUsed:0,purpleSeen:0,purplePop:-9,cd:{tal:0,s1:0,s2:0,s3:0,ult:0,rct:0,sd:0},infG:INF_MAX,infBrk:0,infLast:-9,ampOn:false,rctOut:1,counterT:0,sdT:0,sdHit:0,zoneT:0,zone:0,bloodN:0,bloodT:0,bloodId:0,bloodVersion:0,bloodCast:0,bloodCastSeen:0,fusionSeq:0,shikiSeq:0,fusionGone:0,emp:0,pull:null,flash:0,koT:0,
     ai:{next:.6,strafe:1,sT:0,seen:-1,react:null,guardUntil:0,dodge:null}};
   F.sh=blob(def.r*1.1);
   F.ring=new THREE.Mesh(new THREE.RingGeometry(def.r+.2,def.r+.34,32),basic(side?0xff6a5a:0x9fe6d6,{transparent:true,opacity:.75,side:THREE.DoubleSide,depthWrite:false}));F.ring.rotation.x=-PI/2;scene.add(F.ring);
@@ -1133,7 +1135,7 @@ function hitInSpace(Aa,T,dmg,o={}){
       const id=sendEvt({k:'hit',to:T.slot,r:S.round,dmg,o:{sp:o.space??spaceOf(Aa),di:o.domainId||'',nf:o.nullify?1:0,dc:o.dischg?1:0,df:o.domFx?1:0,bf:o.bf?1:0,unb:o.unb?1:0,big:o.big?1:0,proj:o.proj?1:0,bm:o.blood&&Aa.id==='choso'?1:0,bp:o.bloodPop&&Aa.id==='choso'?1:0,stun:o.stun||0,pull:o.pull||null,pullRate:o.pullRate||0,pullTime:o.pullTime||0,kb:o.kb,su,lc:o.lac&&Aa.id==='yeom'?1:0,sl:o.seal&&Aa.id==='kim'?1:0,rx:o.rad&&Aa.id==='kim'?1:0,tf:o.tariff&&Aa.def.tariffer?1:0,dr:Aa.def.drainer||Aa.id==='kim'?Math.min(30,o.drain||0):0}});
       if(su&&!(Aa.sukunaHits&su)){Aa.sukunaPending[id]={tech:su,to:T.slot,round:S.round};for(const key of Object.keys(Aa.sukunaPending).slice(0,-32))delete Aa.sukunaPending[key]}
       if(o.bf){Aa.bfPending[id]={to:T.slot,round:S.round};for(const key of Object.keys(Aa.bfPending).slice(0,-32))delete Aa.bfPending[key]}
-      Aa.mp=Math.min(MPX(Aa),Aa.mp+2);return 'sent'}
+      Aa.mp=Math.min(MPX(Aa),Aa.mp+(o.noGain||NOGAIN?0:2));return 'sent'}
     if(Aa&&Aa.remote)return false}
   return applyHit(Aa,T,dmg,o)}
 function applyHit(Aa,T,dmg,o={}){return inDrawSpace(spaceOf(T),()=>applyHitInSpace(Aa,T,dmg,o))}
@@ -1173,7 +1175,7 @@ function applyHitInSpace(Aa,T,dmg,o={}){
   const src=Aa?Aa.pos:T.pos.clone().add(new V3(0,0,1));const kb=T.pos.clone().sub(src).setY(0);if(kb.lengthSq()<.01)kb.set(0,0,1);
   T.kb.copy(kb.normalize()).multiplyScalar((T.def.armor?.25:1)*(o.kb??(o.big?10:4)));
   T.flash=.1;setFlash(T,true);burst(T.pos.clone().setY(1.1),T.side?0xff8a7a:0x9fe6d6,10,6);S.shake=Math.max(S.shake,o.big?.3:.12);snd(o.big?200:320,.12,'square',.05,-150);
-  if(Aa)Aa.mp=Math.min(MPX(Aa),Aa.mp+2);
+  if(Aa)Aa.mp=Math.min(MPX(Aa),Aa.mp+(o.noGain||NOGAIN?0:2));
   if(o.seal&&!T.def.noCE){if(!(T.sealT>0))pop(T,'강제 노동 · 술식 봉인','#c8a060');T.sealT=1.2}if(o.drain)T.mp=Math.max(0,T.mp-o.drain);
   dmg=rmAbsorb(T,dmg);T.hp=Math.max(T.jackpotT>0?1:0,T.hp-dmg);sdDamage(T,dmg);if(dmg>0&&Aa&&Aa.side!==T.side)sukunaHit(Aa,o.su);if(o.dischg){T.chgN=0;T.chgT=0}else if(dmg>0&&Aa&&Aa.def.elec&&Aa.side!==T.side)elecMark(Aa,T);if(T.hp<=0)ko(T);else{if(Aa&&Aa.def.venom)poison(T);if(o.bloodPop){T.bloodN=0;T.bloodT=0}else if(dmg>0&&Aa&&Aa.id==='choso')bloodMark(Aa,T);if(o.lac&&dmg>0)lacerate(T);if(o.tariff){if(!(T.tariffT>0))pop(T,'관세 부과','#d8b84a');T.tariffT=8}if(o.rad)irradiate(T,0);if(o.pull)T.pull={to:new V3(+o.pull[0]||0,0,+o.pull[1]||0),t:o.pullTime||.25,rate:o.pullRate||0};if(o.stun&&!holdAct)stun(T,o.stun)}if(o.bf&&dmg>0&&Aa&&Aa.side!==T.side)blackFlash(Aa,T);return 'hit';
 }
@@ -1265,7 +1267,7 @@ function swingHit(F,step){slashFx(F,step);attackBarrier(F,F.def.atk.range*(step=
   const big=step===3,a=F.def.atk,range=a.range*(big?1.15:1),f=fwd(F.face);
   for(const O of foes(F)){const d=O.pos.clone().sub(F.pos).setY(0),l=d.length();
   if(l<range+O.def.r&&(l<.9||d.normalize().dot(f)>.3)){const em=F.emp>0,ratio=F.def.ratio&&step===3;if(ratio)pop(F,'7:3','#e6c84a');const r=meleeHit(F,O,a.dmg[step-1]*(em?2:1)*(ratio?1.8:1),{big:big||em},step);if(em){F.emp=0;pop(F,'배후 일격','var(--spirit)')}if(r==='hit'||r==='sent')S.stop=Math.max(S.stop,big?.09:.04)}}
-  for(const k of S.shiki)if(!k.dead&&k.space===spaceOf(F)&&k.own.side!==F.side&&k.type!=='ele'&&Math.hypot(k.pos.x-F.pos.x,k.pos.z-F.pos.z)<range+(k.type==='fusion'?1.1:.4)){if(k.type==='fusion'){const d=k.pos.clone().sub(F.pos).setY(0),l=d.length();if(l<.9||d.normalize().dot(f)>.3)damageShiki(k,F,a.dmg[step-1]*(F.def.meleeMul||1)*(F.def.ratio&&step===3?1.7:1))}else killShiki(k)}
+  for(const k of S.shiki)if(!k.dead&&k.space===spaceOf(F)&&k.own.side!==F.side&&k.type!=='ele'&&Math.hypot(k.pos.x-F.pos.x,k.pos.z-F.pos.z)<range+(k.type==='fusion'?1.1:.4)){if(k.type==='fusion'||k.keep){const d=k.pos.clone().sub(F.pos).setY(0),l=d.length();if(l<.9||d.normalize().dot(f)>.3)damageShiki(k,F,a.dmg[step-1]*(F.def.meleeMul||1)*(F.def.ratio&&step===3?1.7:1))}else killShiki(k)}
   for(const b of S.proj)if(b.space===spaceOf(F)&&b.own.side!==F.side&&b.kind!=='wave'&&Math.hypot(b.m.position.x-F.pos.x,b.m.position.z-F.pos.z)<range){b.l=0;burst(b.m.position,0xffffff,5,4)}
 }
 // 흑섬: 주력을 담은 직접 근접 타격에서 확률로 발생. 게임에서는 피해 2.5배.
@@ -1637,7 +1639,7 @@ function startStealth(F){F.stealthT=6;pop(F,'기척 소멸','#d0d0d8');burst(F.p
 function setGhost(F,a){if(F.ghostA===a)return;F.ghostA=a;F.m.traverse(o=>{if(!o.material)return;for(const m of Array.isArray(o.material)?o.material:[o.material]){
   if(m.userData.baseOp===undefined){m.userData.baseOp=m.opacity;m.userData.baseTr=m.transparent}m.transparent=a<1||m.userData.baseTr;m.opacity=m.userData.baseOp*a;m.needsUpdate=true}})}
 function extraStatus(F){return(chg(F)?' · 전하 ×'+chg(F):'')+(F.amberT>0?' · 환수호박 '+Math.ceil(F.amberT)+'초':'')+(F.wreckT>0?' · 육체 붕괴':'')+(F.id==='kashimo'&&F.amberUsed&&!(F.amberT>0)?'':'')
-  +(F.id==='hakari'?' · 보류 '+(F.reserve|0)+'/4':'')+(F.jackpotT>0?' · 대박 '+Math.ceil(F.jackpotT)+'초':'')+(F.id==='kim'?' · 린민 '+Math.round(F.rmG||0)+(F.rmBrk>0?' · 인민 이탈':''):'')+(F.sealT>0?' · 강제 노동':'')+(F.tariffT>0?' · 관세 '+Math.ceil(F.tariffT)+'초':'')+(F.retT>0?' · 보복 태세':'')+(F.radT>0?' · 피폭'+(F.radN?' · 중독 ×'+F.radN:''):'')+(F.stealthT>0?' · 기척 소멸':'')}
+  +(F.id==='hakari'?' · 보류 '+(F.reserve|0)+'/4':'')+(F.jackpotT>0?' · 대박 '+Math.ceil(F.jackpotT)+'초':'')+(F.id==='kim'?' · 린민 '+Math.round(F.rmG||0)+(F.rmBrk>0?' · 인민 이탈':''):'')+(F.sealT>0?' · 강제 노동':'')+(F.id==='megumi'&&keptOf(F).length?' · 식신 유지 -'+((keptOf(F,'dog').length?KEEP_SHIKI.dog:0)+(keptOf(F,'nue').length?KEEP_SHIKI.nue:0))+'/초':'')+(F.tariffT>0?' · 관세 '+Math.ceil(F.tariffT)+'초':'')+(F.retT>0?' · 보복 태세':'')+(F.radT>0?' · 피폭'+(F.radN?' · 중독 ×'+F.radN:''):'')+(F.stealthT>0?' · 기척 소멸':'')}
 function punch(F,range,dmg,big){attackBarrier(F,range,dmg);burst(F.pos.clone().setY(1.1).addScaledVector(fwd(F.face),1),F.def.atk.col,5,4);snd(big?260:420,.08,'square',.04,-150);
   for(const O of foes(F)){const d=O.pos.clone().sub(F.pos).setY(0),l=d.length();
   if(l<range+O.def.r&&(l<.9||d.normalize().dot(fwd(F.face))>.2)){const r=meleeHit(F,O,dmg,{big:!!big},big?3:1);if(r==='hit'||r==='sent')S.stop=Math.max(S.stop,big?.08:.03)}}}
@@ -1715,6 +1717,11 @@ function mkEle(){const g=new THREE.Group(),m=lam(0x4a5470);
 function mkRabbit(){const g=new THREE.Group(),m=lam(0xf4f2f6);const b=new THREE.Mesh(new THREE.SphereGeometry(.17,8,6),m);b.position.y=.17;g.add(b);
   const h=new THREE.Mesh(new THREE.SphereGeometry(.11,8,6),m);h.position.set(0,.3,.12);g.add(h);
   for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.BoxGeometry(.04,.2,.03),m);e.position.set(s*.05,.46,.1);g.add(e)}return g}
+// ===== 유지형 식신(옥견·누에): 주력을 계속 쓰며 남아 있음 =====
+const keptOf=(F,type)=>S.shiki.filter(k=>!k.dead&&k.keep&&k.own===F&&(!type||k.type===type));
+function keepToggle(F,type){const ks=keptOf(F,type);if(!ks.length)return true;if(F.human){ks.forEach(k=>killShiki(k));snd(300,.15,'sine',.03,-150)}return false}
+function keepUpkeep(F,dt){if(F.remote)return;const d=keptOf(F,'dog').length?KEEP_SHIKI.dog:0,n=keptOf(F,'nue').length?KEEP_SHIKI.nue:0;if(!d&&!n)return;
+  F.mp-=(d+n)*dt;if(F.mp<=0||F.state==='ko'){F.mp=Math.max(0,F.mp);keptOf(F).forEach(k=>killShiki(k));if(F.state!=='ko')pop(F,'주력 부족 · 식신 소멸','#ff8a7a')}}
 function summon(F,type,x,z,o={}){
   if(type==='fusion'){
     if(F.id!=='megumi'||S.state!=='fight')return null;
@@ -1722,23 +1729,25 @@ function summon(F,type,x,z,o={}){
     else{o.id=++F.fusionSeq;const O=opp(F),dir=O.pos.clone().sub(F.pos).setY(0).normalize();x+=dir.x*2;z+=dir.z*2;x=Math.max(-A,Math.min(A,x));z=Math.max(-A,Math.min(A,z))}
     for(const k of S.shiki)if(!k.dead&&k.own===F&&(k.type==='dog'||k.type==='fusion'))killShiki(k);
   }
-  if(S.mode==='net'&&!F.remote&&!(type==='rabbit'&&o.i))sendEvt({k:'fx',n:'shiki',a:{t:type,x:+x.toFixed(2),z:+z.toFixed(2),w:o.white?1:0,i:o.i|0,id:type==='fusion'?o.id:undefined,r:type==='fusion'?S.round:undefined}});
+  if(o.keep&&!F.remote)o.id=++F.shikiSeq;
+  if(S.mode==='net'&&!F.remote&&!(type==='rabbit'&&o.i))sendEvt({k:'fx',n:'shiki',a:{t:type,x:+x.toFixed(2),z:+z.toFixed(2),w:o.white?1:0,i:o.i|0,id:type==='fusion'||o.keep?o.id:undefined,kp:o.keep?1:0,r:type==='fusion'?S.round:undefined}});
   const pos=new V3(x,0,z);let m,k;
-  if(type==='dog'){m=mkDog(o.white);k={life:6,cd:.4,hp:1}}
+  if(type==='dog'){m=mkDog(o.white);k={life:6,cd:.4,hp:o.keep?KEEP_SHIKI.dogHp:1}}
   else if(type==='wall'){m=mkWall();k={life:6,cd:99,hp:4,rot:F.face}}
   else if(type==='kaizo'){m=mkKaizo();const a=(o.i|0)/4*PI*2+Math.random()*.5,r=1.2+Math.random()*.8;pos.x+=Math.cos(a)*r;pos.z+=Math.sin(a)*r;clampV(pos,A);k={life:6,cd:.4+Math.random()*.4,hp:1,ph:Math.random()*6,dmg:4,spd:9.5}}
   else if(type==='inmin'){m=mkInmin();const a=(o.i|0)/KIM.inmin*PI*2+Math.random()*.4,r=1.4+Math.random()*.8;pos.x+=Math.cos(a)*r;pos.z+=Math.sin(a)*r;clampV(pos,A);k={life:7,cd:.5+Math.random()*.4,hp:1,ph:Math.random()*6}}
   else if(type==='fusion'){m=mkFusion();k={life:FUSION.life,hp:FUSION.hp,netId:o.id,face:Math.atan2(opp(F).pos.x-x,opp(F).pos.z-z),cds:{bite:.4,snake:1,tongue:.65,water:1.6},attack:null,animT:0,animKind:'',walking:0}}
-  else if(type==='nue'){m=mkNue();pos.y=3.5;k={life:2.2,phase:0,hp:1}}
+  else if(type==='nue'){m=mkNue();pos.y=3.5;k={life:2.2,phase:0,hp:o.keep?KEEP_SHIKI.nueHp:1,nt:1.2}}
   else if(type==='ele'){m=mkEle();const O=opp(F);pos.set(O.pos.x,7.5,O.pos.z);k={life:1.5,hp:99}}
   else{m=mkRabbit();const a=Math.random()*PI*2,r=.8+Math.random()*1.8;pos.x+=Math.cos(a)*r;pos.z+=Math.sin(a)*r;clampV(pos,A);k={life:2.6+Math.random()*.6,hp:1,ph:Math.random()*6}}
-  Object.assign(k,{type,m,pos,own:F,space:effectSpace(F),t:0,dom:DOMTAG});m.position.copy(pos);if(type==='dog')m.position.y=-.9;scene.add(m);S.shiki.push(k);
+  Object.assign(k,{type,m,pos,own:F,space:effectSpace(F),t:0,dom:DOMTAG});if(o.keep){k.keep=true;k.netId=o.id;k.life=Infinity;k.maxHp=k.hp}m.position.copy(pos);if(type==='dog')m.position.y=-.9;scene.add(m);S.shiki.push(k);
   burst(new V3(x,.15,z),type==='inmin'?0xd8202a:type==='kaizo'?0x9a7aff:0x05060c,type==='fusion'?32:type==='rabbit'||type==='inmin'||type==='kaizo'||type==='wall'?3:14,5);if(type!=='rabbit'&&type!=='inmin'&&type!=='kaizo'&&type!=='wall')burst(new V3(x,.15,z),0x5a6aff,6,4);if(type==='fusion')snd(110,.7,'sawtooth',.055,-50);return k}
 function disposeFusion(k){if(k.type!=='fusion'||k.disposed)return;k.disposed=true;const mats=new Set();k.m.traverse(o=>{if(o.isMesh)mats.add(o.material)});for(const mat of mats)mat.dispose?.()}
 function killShiki(k){if(k.dead)return;k.dead=true;scene.remove(k.m);disposeFusion(k);burst(k.m.position.clone().setY(Math.max(.4,k.m.position.y)),0x05060c,12,5);
-  if(k.type==='fusion'){k.own.fusionGone=Math.max(k.own.fusionGone,k.netId);if(S.mode==='net'&&!k.own.remote)sendEvt({k:'fx',n:'fusionGone',a:{id:k.netId,r:S.round}})}}
+  if(k.type==='fusion'){k.own.fusionGone=Math.max(k.own.fusionGone,k.netId);if(S.mode==='net'&&!k.own.remote)sendEvt({k:'fx',n:'fusionGone',a:{id:k.netId,r:S.round}})}
+  if(k.keep&&S.mode==='net'&&!k.own.remote)sendEvt({k:'fx',n:'shikiGone',a:{id:k.netId,r:S.round}})}
 function damageShiki(k,Aa,dmg,confirmed=false,space=spaceOf(Aa)){
-  if(space!==(k.space||'')||k.dead||k.type!=='fusion'||S.state!=='fight'||!Aa||Aa.side===k.own.side||!(dmg>0))return false;
+  if(space!==(k.space||'')||k.dead||!(k.type==='fusion'||k.keep)||S.state!=='fight'||!Aa||Aa.side===k.own.side||!(dmg>0))return false;
   if(!confirmed)dmg*=(Aa.otT>0?1.5:1)*(Aa.redT>0?1.25:1);
   if(S.mode==='net'){if(k.own.remote){if(Aa.remote||confirmed)return false;sendEvt({k:'shikiHit',to:k.own.slot,id:k.netId,dmg,r:S.round,sp:space});return 'sent'}if(Aa.remote&&!confirmed)return false}
   k.hp=Math.max(0,k.hp-dmg);burst(k.pos.clone().setY(1.5),0xe5d9b6,6,4);if(k.hp<=0)killShiki(k);return 'hit';
@@ -1788,19 +1797,26 @@ function syncFusion(F,gone,row){
 }
 function updateShiki(dt){return inDrawSpace(DRAW_SPACE,()=>updateShikiInSpace(dt))}
 function updateShikiInSpace(dt){
-  for(const k of S.shiki){if(k.dead)continue;DRAW_SPACE=k.space||'';k.t+=dt;const F=k.own,O=foes(F,k.space).sort((a,b)=>Math.hypot(a.pos.x-k.pos.x,a.pos.z-k.pos.z)-Math.hypot(b.pos.x-k.pos.x,b.pos.z-k.pos.z))[0],m=k.m;if(!O){if(k.type==='fusion'&&F.state==='ko'||k.t>=k.life)killShiki(k);continue}
+  for(const k of S.shiki){if(k.dead)continue;if(k.keep&&(k.own.state==='ko'||(k.own.remote&&k.own.mp<=0&&k.t>1))){killShiki(k);continue}DRAW_SPACE=k.space||'';k.t+=dt;const F=k.own,O=foes(F,k.space).sort((a,b)=>Math.hypot(a.pos.x-k.pos.x,a.pos.z-k.pos.z)-Math.hypot(b.pos.x-k.pos.x,b.pos.z-k.pos.z))[0],m=k.m;if(!O){if(k.type==='fusion'&&F.state==='ko'||k.t>=k.life)killShiki(k);continue}
     if(k.type==='fusion'&&(F.state==='ko'||k.t>=k.life+(S.mode==='net'&&F.remote?3:0))){killShiki(k);continue}
     if(k.type==='fusion')updateFusion(k,dt);
     else if(k.type==='dog'){const d=O.pos.clone().sub(k.pos).setY(0),l=d.length()||.01;d.divideScalar(l);
       if(l>O.def.r+.95&&O.state!=='ko')k.pos.addScaledVector(d,Math.min(l-O.def.r-.9,10.5*dt));clampV(k.pos,A);
       m.position.set(k.pos.x,Math.min(0,-.9+k.t*5),k.pos.z);m.rotation.y=Math.atan2(d.x,d.z);
       m.userData.legs.forEach((g,i)=>g.rotation.x=Math.sin(k.t*16+(i%2)*PI)*.6);
-      k.cd-=dt;if(l<O.def.r+1.3&&k.cd<=0&&O.state!=='ko'&&k.t>.25){k.cd=1.1;m.position.addScaledVector(d,.35);burst(O.pos.clone().setY(.9),0xf2f0f5,5,4);snd(320,.08,'sawtooth',.03,-200);hit(F,O,4,{proj:true,space:k.space,domFx:!!k.dom})}}
+      k.cd-=dt;if(l<O.def.r+1.3&&k.cd<=0&&O.state!=='ko'&&k.t>.25){k.cd=k.keep?1.6:1.1;m.position.addScaledVector(d,.35);burst(O.pos.clone().setY(.9),0xf2f0f5,5,4);snd(320,.08,'sawtooth',.03,-200);hit(F,O,4,{proj:true,space:k.space,domFx:!!k.dom,noGain:!!k.keep})}}
     else if(k.type==='wall'){m.position.set(k.pos.x,0,k.pos.z);m.rotation.y=k.rot||0}
     else if(k.type==='inmin'||k.type==='kaizo'){const d=O.pos.clone().sub(k.pos).setY(0),l=d.length()||.01;d.divideScalar(l);
       if(l>O.def.r+.8&&O.state!=='ko')k.pos.addScaledVector(d,Math.min(l-O.def.r-.75,(k.spd||8.5)*dt));clampV(k.pos,A);
       m.position.set(k.pos.x,Math.abs(Math.sin(k.t*12+k.ph))*.12,k.pos.z);m.rotation.y=Math.atan2(d.x,d.z);
       k.cd-=dt;if(l<O.def.r+1.1&&k.cd<=0&&O.state!=='ko'&&k.t>.3){k.cd=1;burst(O.pos.clone().setY(.9),0xd8c0a0,4,3);snd(260,.06,'square',.025,-120);hit(F,O,k.dmg||3,{proj:true,space:k.space,domFx:!!k.dom})}}
+    else if(k.type==='nue'&&k.keep){const w=m.userData.wings;w[0].rotation.z=Math.sin(k.t*14)*.6;w[1].rotation.z=-Math.sin(k.t*14)*.6;
+      if(k.phase===0){const hov=O.pos.clone().add(new V3(Math.cos(k.t*1.6)*2.2,4,Math.sin(k.t*1.6)*2.2));k.pos.lerp(hov,Math.min(1,dt*3));m.lookAt(O.pos.x,k.pos.y,O.pos.z);m.userData.zap.visible=false;
+        k.nt-=dt;if(k.nt<=0&&O.state!=='ko'){k.phase=1;k.dt0=k.t;m.userData.zap.visible=true;snd(1200,.15,'sawtooth',.025,-500)}}
+      else if(k.phase===1){const to=O.pos.clone().setY(1.1),d=to.clone().sub(k.pos),l=d.length();k.pos.addScaledVector(d.normalize(),Math.min(l,18*dt));m.lookAt(to);m.userData.zap.scale.setScalar(1.2+Math.random());
+        if(l<1.2||k.t-k.dt0>1.4){k.phase=2;k.nt=KEEP_SHIKI.nueEvery;if(!F.remote&&l<1.6){DOMTAG=!!k.dom;NOGAIN=true;strike(F,O.pos.clone(),1.6,KEEP_SHIKI.nueDmg);NOGAIN=false;DOMTAG=false}}}
+      else{k.pos.y+=dt*7;if(k.pos.y>3.8)k.phase=0}
+      m.position.copy(k.pos)}
     else if(k.type==='nue'){const w=m.userData.wings;w[0].rotation.z=Math.sin(k.t*14)*.6;w[1].rotation.z=-Math.sin(k.t*14)*.6;
       if(k.phase===0){const to=O.pos.clone().setY(4);k.pos.lerp(to,Math.min(1,dt*3.2));m.lookAt(to.x,4,to.z);
         if(k.t>.9){k.phase=1;k.at=O.pos.clone();m.userData.zap.visible=true;if(!F.remote){DOMTAG=!!k.dom;strike(F,k.at,1.8,15);DOMTAG=false};snd(1400,.2,'sawtooth',.03,-900)}}
@@ -2083,6 +2099,7 @@ function stepFighter(F,I,dt){
   if(F.def.inf&&F.infBrk>0){F.infBrk-=dt;if(F.infBrk<=0){F.infBrk=0;F.infG=INF_MAX;pop(F,'무하한 재생','#9fd0ff');burst(F.pos.clone().setY(1.1),0x9fd0ff,20,6);snd(880,.3,'sine',.04,440)}}
   if(F.ampOn){F.mp=Math.max(0,F.mp-ampDrain(F)*zoneEff(F)*dt);if(F.mp<=0)setAmp(F,false)}
   if(F.sealT>0)F.sealT-=dt;
+  if(F.id==='megumi')keepUpkeep(F,dt);
   if(F.tariffT>0)F.tariffT-=dt;if(F.retT>0)F.retT-=dt;
   if(F.radT>0){F.radT-=dt;F.hp=Math.max(0,F.hp-(KIM.radBase+KIM.radPer*(F.radN|0))*dt);if(Math.random()<.25+.03*(F.radN|0))burst(F.pos.clone().setY(.4+Math.random()*1.5),0x8aff5a,1,2);
     if(F.jackpotT>0)F.hp=Math.max(1,F.hp);if(F.hp<=0&&S.state==='fight')ko(F);if(F.radT<=0){F.radT=0;F.radN=0}}
@@ -2149,7 +2166,7 @@ function updateWorldInSpace(dt){
       for(const e of S.proj)if(e.space===b.space&&e!==b&&e.l>0&&e.own.side!==b.own.side&&(flat?projectileTouches(b,e.m.position,.3,travel):Math.hypot(e.m.position.x-b.m.position.x,e.m.position.z-b.m.position.z)<Math.max(1.2,b.radius))){e.l=0;if(e.blast)e.exploded=true;burst(e.m.position,col,6,5)}}if(b.kind==='tal'||b.kind==='rock')b.m.rotation.y+=dt*14;
     if(b.kind==='bloodDisc'){b.m.rotation.y+=dt*24;if(Math.random()<.45)burst(b.m.position,0xd8203a,1,2)}
     if(b.line){const pa=b.line.geometry.attributes.position;pa.setXYZ(0,b.own.pos.x,1.1,b.own.pos.z);pa.setXYZ(1,b.m.position.x,b.m.position.y,b.m.position.z);pa.needsUpdate=true}
-    for(const k of S.shiki)if(!k.dead&&k.type==='fusion'&&k.space===b.space&&k.own.side!==b.own.side&&b.l>0&&!(b.shikiHitSet?.has(k))&&projectileTouches(b,k.pos,1.1,travel)){damageShiki(k,b.own,b.dmg,false,b.space);(b.shikiHitSet||(b.shikiHitSet=new Set())).add(k);if(!b.pierce)b.l=0}
+    for(const k of S.shiki)if(!k.dead&&(k.type==='fusion'||k.keep)&&k.space===b.space&&k.own.side!==b.own.side&&b.l>0&&!(b.shikiHitSet?.has(k))&&projectileTouches(b,k.type==='nue'?k.pos.clone().setY(1):k.pos,k.type==='fusion'?1.1:.7,travel)){damageShiki(k,b.own,b.dmg,false,b.space);(b.shikiHitSet||(b.shikiHitSet=new Set())).add(k);if(!b.pierce)b.l=0}
     if(!b.pierce&&b.l>0)for(const k of S.shiki)if(!k.dead&&(k.type==='inmin'||k.type==='wall')&&k.space===b.space&&k.own.side!==b.own.side&&projectileTouches(b,k.pos,k.type==='wall'?.95:.45,travel)){if(k.type==='wall'){burst(b.m.position.clone(),0xd8b84a,6,4);if(--k.hp<=0)killShiki(k)}else killShiki(k);b.l=0;if(b.kim==='nuke')kimNukeBlast(b);break}
     if(b.kim==='myeol'){for(const k of S.shiki)if(!k.dead&&k.space===b.space&&k.own.side!==b.own.side&&Math.hypot(k.pos.x-b.m.position.x,k.pos.z-b.m.position.z)<1.6)killShiki(k);if(Math.random()<.7)burst(b.m.position,0xffd0d0,1,3)}
     if(b.kim==='nuke'&&Math.random()<.8)burst(b.m.position,Math.random()<.5?0xffb43a:0x8aff5a,1,3);
@@ -2436,7 +2453,7 @@ function handleEvt(R,e){const L=S.f[S.me];
     const r=applyHit(R,L,num(e.dmg,0,300),{space:typeof o.sp==='string'?o.sp:undefined,domainId:typeof o.di==='string'?o.di:'',nullify:!!o.nf,dischg:!!o.dc,domFx:!!o.df,bf:!!o.bf,unb:!!o.unb,big:!!o.big,proj:!!o.proj,blood:R.id==='choso'&&!!o.bm,bloodPop:R.id==='choso'&&!!o.bp,stun:num(o.stun,0,2),kb:o.kb==null?undefined:num(o.kb,0,10),pull:Array.isArray(o.pull)?[num(o.pull[0],-A,A),num(o.pull[1],-A,A)]:null,pullRate:num(o.pullRate,0,60),pullTime:num(o.pullTime,0,2),lac:R.id==='yeom'&&!!o.lc,seal:R.id==='kim'&&!!o.sl,rad:R.id==='kim'&&!!o.rx,drain:R.def.drainer||R.id==='kim'?num(o.dr,0,30):0,tariff:!!R.def.tariffer&&!!o.tf});
     if(o.bf&&r==='hit'&&e.dmg>0&&e.r===S.round)sendEvt({k:'blackFlashHit',to:R.slot,hit:e.i,r:S.round});if(su&&r==='hit'&&e.dmg>0&&e.r===S.round)sendEvt({k:'sukunaHit',to:R.slot,tech:su,hit:e.i,r:S.round})}
   else if(e.k==='barrierHit'){if(e.r!==S.round||e.sp!=='')return;const d=S.doms.find(d=>d.owner===L&&d.id===e.id);if(d)wallStrike(d,R,e.sector,num(e.dmg,0,300),true)}
-  else if(e.k==='shikiHit'){if(e.r!==S.round||R.side===L.side)return;const k=S.shiki.find(k=>!k.dead&&k.own===L&&k.type==='fusion'&&k.netId===e.id);if(k)damageShiki(k,R,num(e.dmg,0,300),true,typeof e.sp==='string'?e.sp:spaceOf(R))}
+  else if(e.k==='shikiHit'){if(e.r!==S.round||R.side===L.side)return;const k=S.shiki.find(k=>!k.dead&&k.own===L&&(k.type==='fusion'||k.keep)&&k.netId===e.id);if(k)damageShiki(k,R,num(e.dmg,0,300),true,typeof e.sp==='string'?e.sp:spaceOf(R))}
   else if(e.k==='blackFlashHit'){const p=L.bfPending[e.hit];if(e.r===S.round&&p&&p.round===S.round&&p.to===R.slot){delete L.bfPending[e.hit];blackFlash(L,R)}}
   else if(e.k==='sukunaHit'){const p=L.sukunaPending[e.hit];if(e.r===S.round&&p&&p.round===S.round&&p.to===R.slot&&p.tech===e.tech){sukunaHit(L,p.tech);for(const id in L.sukunaPending)if(L.sukunaPending[id].tech===p.tech)delete L.sukunaPending[id]}}
   else if(e.k==='swap'){if(S.state==='fight'&&L.state!=='ko'){L.pos.set(num(e.x,-A,A),0,num(e.z,-A,A));burst(L.pos.clone().setY(1),0xffc070,16,6)}}
@@ -2445,6 +2462,7 @@ function handleEvt(R,e){const L=S.f[S.me];
 function netFx(R,n,a,space=spaceOf(R)){const before=REMOTE_FX_SPACE;REMOTE_FX_SPACE=space;try{return inDrawSpace(space,()=>netFxInSpace(R,n,a))}finally{REMOTE_FX_SPACE=before}}
 function netFxInSpace(R,n,a){if(!a||typeof a!=='object')return;
   if(n==='bloodNova'&&R.id==='choso')supernova(R,a);
+  if(n==='shikiGone'&&a.r===S.round){const k=S.shiki.find(k=>!k.dead&&k.own===R&&k.keep&&k.netId===a.id);if(k)killShiki(k)}
   if(n==='spiritFx'&&R.def.spirit&&['meteor','erupt','bloom','touch'].includes(a.t))spiritFx(R,a.t,new V3(num(a.x,-A,A),0,num(a.z,-A,A)),true);
   if(n==='bloodTide'&&R.id==='choso')bloodTideFx(new V3(num(a.x,-A,A),0,num(a.z,-A,A)));
   else if(n==='bloodErupt'&&R.id==='choso')eruptBlood(R,a);
@@ -2461,7 +2479,7 @@ function netFxInSpace(R,n,a){if(!a||typeof a!=='object')return;
   else if(n==='shiki'&&a.t==='fusion'&&R.id==='megumi'){summon(R,'fusion',num(a.x,-A,A),num(a.z,-A,A),{id:a.id,r:a.r})}
   else if(n==='fusionGone'&&R.id==='megumi'&&a.r===S.round&&Number.isInteger(a.id)){R.fusionGone=Math.max(R.fusionGone,num(a.id,0,1e9));for(const k of S.shiki)if(!k.dead&&k.own===R&&k.type==='fusion'&&k.netId<=R.fusionGone)killShiki(k)}
   else if(n==='fusionAttack'&&R.id==='megumi'&&a.r===S.round&&['bite','snake','tongue','water'].includes(a.kind)){const k=S.shiki.find(k=>!k.dead&&k.own===R&&k.type==='fusion'&&k.netId===a.id);if(k)fusionAttackFx(k,a.kind,new V3(num(a.x,-A,A),0,num(a.z,-A,A)))}
-  else if(n==='shiki'){if(['dog','nue','ele','rabbit','inmin','kaizo','wall'].includes(a.t))for(let i=0;i<(a.t==='rabbit'?18:1);i++)summon(R,a.t,num(a.x,-EDGE,EDGE),num(a.z,-EDGE,EDGE),{white:!!a.w,i})}
+  else if(n==='shiki'){if(['dog','nue','ele','rabbit','inmin','kaizo','wall'].includes(a.t))for(let i=0;i<(a.t==='rabbit'?18:1);i++)summon(R,a.t,num(a.x,-EDGE,EDGE),num(a.z,-EDGE,EDGE),{white:!!a.w,i,keep:!!a.kp&&(a.t==='dog'||a.t==='nue')&&Number.isInteger(a.id),id:a.id})}
   else if(n==='dispel')dispelRemote(R);
   else if(n==='bolt')boltFx(new V3(num(a.x1,-EDGE,EDGE),num(a.y1,0,30),num(a.z1,-EDGE,EDGE)),new V3(num(a.x2,-EDGE,EDGE),1.1,num(a.z2,-EDGE,EDGE)),false);
   else if(n==='shutter')shutterFx(new V3(num(a.x,-EDGE,EDGE),0,num(a.z,-EDGE,EDGE)),num(a.a,-10,10));
